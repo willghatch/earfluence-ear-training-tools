@@ -46,7 +46,7 @@ const exampleConfig = {
   arpeggiate: false,
   arpeggioDirection: "forward",
   arpeggiationSpeed: 0.1,
-  restBeats: 1,
+  cycleBeats: 2,
   noteDuration: 1,
   chords: defaultChordPresets["Major Scale Triads"],
   chordPresets: defaultChordPresets,
@@ -68,7 +68,7 @@ function getCurrentConfig() {
     arpeggiationSpeed: parseFloat(
       document.getElementById("arpeggiationSpeed").value,
     ),
-    restBeats: parseFloat(document.getElementById("restBeats").value),
+    cycleBeats: parseFloat(document.getElementById("cycleBeats").value),
     noteDuration: parseFloat(document.getElementById("noteDuration").value),
   };
 
@@ -99,7 +99,7 @@ function setConfig(config) {
     `input[name="arpeggioDirection"][value="${config.arpeggioDirection}"]`,
   ).checked = true;
   document.getElementById("arpeggiationSpeed").value = config.arpeggiationSpeed;
-  document.getElementById("restBeats").value = config.restBeats;
+  document.getElementById("cycleBeats").value = config.cycleBeats;
   document.getElementById("noteDuration").value = config.noteDuration;
 
   chordPresets = config.chordPresets;

@@ -100,9 +100,9 @@
                 synth.triggerAttackRelease(midiTones(choice), noteDuration);
               }
 
-              // Schedule next chord after rest period
+              // Schedule next chord after cycle duration
               const waitTime =
-                (1 + config.restBeats) * bpmMilliseconds(config.tempo);
+                config.cycleBeats * bpmMilliseconds(config.tempo);
               setTimeout(mkCont(choice), waitTime);
             }
           };
@@ -179,7 +179,7 @@
             <code>[0,3,8]</code> and be on bass note mi.
           </p>
           <p>
-            You can also use the arpeggiate mode, note, and rest duration
+            You can also use the arpeggiate mode, note, and cycle duration
             parameters to make a “chunked” version of pitch matching. You can do
             this with arpeggios of actual chords, or you can create presets that
             include “chords” that are actually scale fragments or other patterns
