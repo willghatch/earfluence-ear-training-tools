@@ -1,0 +1,67 @@
+.config-editor {
+  padding: 20px;
+}
+
+.config-row {
+  margin-bottom: 10px;
+}
+
+.solfege-grid,
+.weights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 2fr));
+  gap: 30px;
+}
+
+.solfege-grid input,
+.weight-item input {
+  width: 100%;
+  min-width: 80px;
+}
+
+/* touch screen specific adjustments */
+@media (any-pointer: coarse) {
+  .solfege-grid input,
+  .weight-item input {
+    min-width: 200px;
+    font-size: 1em;
+  }
+}
+
+.chord-config {
+  border: 1px solid #ccc;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+}
+
+.chord-header {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.chord-header input {
+  max-width: 200px;
+}
+
+.weight-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.weight-item label {
+  min-width: 30px;
+}
+
+.arpeggio-direction {
+  display: flex;
+  gap: 1em;
+}
+
+.arpeggio-direction label {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}

@@ -1,0 +1,230 @@
+<!doctype html>
+
+<html lang="en" data-bs-theme="auto">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chord Match Ear Training</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link href="ear-training-helpers.css" rel="stylesheet" />
+    <link href="chord-match-config.css" rel="stylesheet" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+
+    <script
+      type="text/javascript"
+      src="bootstrap-prefers-color-scheme.js"
+    ></script>
+    <script type="text/javascript" src="chord-match-config.js"></script>
+    <script type="text/javascript" src="ear-training-helpers.js"></script>
+    <script
+      src="https://unpkg.com/htmx.org@2.0.3"
+      integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://unpkg.com/tone@15"></script>
+    <script>
+      let playingGlobal = false;
+
+      function play() {
+        const synth = new Tone.PolySynth({
+          envelope: {
+            attack: 0.05,
+            decay: 0.2,
+            sustain: 0.8,
+            // Want fast release, the note bleeds too far into the space at higher speeds.
+            release: 0.05,
+          },
+        }).toDestination();
+        Tone.Transport.bpm.value = getCurrentConfig().tempo;
+        playingGlobal = true;
+        startPlaying(synth, getPlaying, undefined);
+      }
+      function stop() {
+        playingGlobal = false;
+      }
+      function togglePlay() {
+        if (playingGlobal) {
+          stop();
+        } else {
+          play();
+        }
+      }
+      function getPlaying() {
+        return playingGlobal;
+      }
+
+      function startPlaying(synth, getPlaying, lastChoice) {
+        function mkCont(lastChoice) {
+          return () => {
+            const config = getCurrentConfig();
+            if (getPlaying()) {
+              const choice = makeChordChoice(config);
+              console.log("playing choice: ", choice);
+              const beatDuration = bpmSeconds(config.tempo);
+              const noteDuration = beatDuration * config.noteDuration;
+              if (config.arpeggiate) {
+                // Play notes one at a time (but likely with overlap)
+                const arpeggiationDelay =
+                  config.arpeggiationSpeed * bpmMilliseconds(config.tempo);
+
+                let notesToPlay = [...choice];
+                if (config.arpeggioDirection === "backward") {
+                  notesToPlay.reverse();
+                } else if (config.arpeggioDirection === "both") {
+                  // Randomly choose direction for each arpeggio
+                  if (Math.random() < 0.5) {
+                    notesToPlay.reverse();
+                  }
+                }
+
+                notesToPlay.forEach((note, index) => {
+                  setTimeout(() => {
+                    synth.triggerAttackRelease(
+                      midiTone(note),
+                      noteDuration,
+                      Tone.now(),
+                    );
+                  }, index * arpeggiationDelay);
+                });
+              } else {
+                // Play all notes together
+                synth.triggerAttackRelease(midiTones(choice), noteDuration);
+              }
+
+              // Schedule next chord after rest period
+              const waitTime =
+                (1 + config.restBeats) * bpmMilliseconds(config.tempo);
+              setTimeout(mkCont(choice), waitTime);
+            }
+          };
+        }
+        mkCont()();
+      }
+    </script>
+  </head>
+
+  <body>
+    <h1>Chord Match Ear Training Tool</h1>
+    <hr />
+
+    <div>
+      <button
+        class="btn btn-secondary"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#instructions"
+        aria-expanded="false"
+        aria-controls="instructions"
+      >
+        Show/Hide Explanation
+      </button>
+      <div class="collapse" id="instructions">
+        <div class="card card-body">
+          <h2>About this tool</h2>
+
+          <p>
+            This tool will play a chord, then a rest, repeated. You should match
+            the chord on your instrument.
+          </p>
+          <p>
+            I suggest this tool to be used after mastering chord recognition
+            recognition at a slow, flexible speed. A good tool for this is the
+            Chord Functions exercise in the
+            <a href="https://github.com/ShacharHarshuv/open-ear">
+              OpenEar app </a
+            >. Also, you should probably also be pretty fast with the companion
+            <a href="pitch-match.html"> Pitch Match</a> tool before using this
+            one.
+          </p>
+          <p>
+            This tool does not detect whether or not you match pitches
+            successfully, you need to have sufficient ear training skill to tell
+            for yourself whether or not you match. The main purpose of this tool
+            is to (1) push your recognition speed faster, and (2) practice
+            matching using your instrument of choice instead of an ear training
+            app UI.
+          </p>
+          <p>
+            You may want to try to match notes and voicings exactly, or you may
+            want to merely match chord bass, root, and quality. Or whatever. Use
+            this tool in any way that helps you.
+          </p>
+          <p>
+            Configure chords by writing their offsets in semitones from the root
+            note. Offset lists are written in JSON format, and should just be a
+            list of numbers, like
+            <code>[0,4,7]</code>. Offsets may be negative, and do not need to be
+            in any particular order.
+          </p>
+          <p>
+            Each chord type has a weight for each solfege syllable. If you have
+            a major chord with weight 10 on do, and other weights adding up to
+            100, then there is a 1/10 chance of the tool playing a major I
+            chord. The probability for each chord is unaffected by previous
+            chords, unlike the tone match tool.
+          </p>
+          <p>
+            If you want to add an inverted chord, write the offsets from the
+            bass note, and write probabilities based on the bass note. For
+            example, a I chord in first inversion would have offsets
+            <code>[0,3,8]</code> and be on bass note mi.
+          </p>
+          <p>
+            You can also use the arpeggiate mode, note, and rest duration
+            parameters to make a “chunked” version of pitch matching. You can do
+            this with arpeggios of actual chords, or you can create presets that
+            include “chords” that are actually scale fragments or other patterns
+            that you want to practice recognizing as a “chunk”. This idea is
+            similar to chucking word fragments, words, and common phrases in
+            natural language for speaking, listening, or reading. If you can
+            recognize a group of notes as a single “chunk”, it can be easier to
+            recognize and remember larger musical phrases. Along with increasing
+            recognition (and production) speed, chunking can help improve
+            musical fluency.
+          </p>
+          <p>
+            Each of these tools has a configuration import/export feature to
+            save your configuration (and presets) in JSON, as well as edit them
+            by hand. To import a saved configuration, paste it into the box and
+            use the Import Config button. Press the Export Config button to
+            replace the text in the box with the current configuration. Use
+            Control+A to select all of the text, copy it, and paste it somewhere
+            to save or edit.
+          </p>
+          <p>
+            This is a companion to the
+            <a href="pitch-match.html"> Pitch Match</a> tool and the
+            <a href="sight-sing.html"> Sight Sing</a> tool.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="appSpace">
+      <div
+        hx-swap="innerHTML"
+        hx-trigger="load"
+        hx-get="chord-match-config.html"
+        hx-on::after-request="initializeConfigEditor()"
+      >
+        Loading configuration editor...
+      </div>
+      <button onclick="togglePlay()">Play/Pause</button>
+      <button onclick="playMajorCadence(getCurrentConfig())">
+        Play Major Cadence
+      </button>
+      <button onclick="playMinorCadence(getCurrentConfig())">
+        Play Minor Cadence
+      </button>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,98 @@
+/* Generic CSS */
+
+html {
+  font-size: 1.1em;
+  max-width: 95vw;
+  padding: 2em 1em;
+  margin: auto;
+  line-height: 1.75;
+}
+p {
+  max-width: 70ch;
+}
+button,
+select,
+input {
+  padding: 1em;
+  max-width: 100%;
+}
+label {
+  min-width: 10ch;
+}
+
+/* touch screen */
+@media (any-pointer: coarse) {
+  html {
+    font-size: 2em;
+  }
+  button,
+  select,
+  input {
+    min-height: 100px;
+    min-width: 100px;
+    font-size: 2em;
+  }
+}
+/* no touch screen */
+@media (any-pointer: fine) {
+}
+
+/*
+@media (prefers-color-scheme: dark), (prefers-color-scheme: no-preference) {
+html {background: #101010; color: #c5c5c5;}
+a:link {color: #246ab5;}
+a:visited {color: #a30393;}
+}
+@media (prefers-color-scheme: light) {
+html {background: #efefee; color: #101020;}
+a:link {color: #2624b5;}
+a:visited {color: #6c24b5;}
+}
+*/
+
+/* Shared config CSS */
+
+.config-editor {
+  padding: 20px;
+}
+
+.config-row {
+  margin-bottom: 10px;
+}
+
+.config-io {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.config-io textarea {
+  width: 100%;
+  min-height: 100px;
+  font-family: monospace;
+}
+
+.config-io-buttons {
+  display: flex;
+  gap: 15px;
+}
+
+.preset-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin-bottom: 1em;
+}
+
+.preset-controls select {
+  min-width: 200px;
+}
+
+.save-preset {
+  display: flex;
+  gap: 0.5em;
+}
+
+.save-preset input {
+  width: 200px;
+}

@@ -1,0 +1,496 @@
+<!doctype html>
+
+<html lang="en" data-bs-theme="auto">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sight Sing Ear Training</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link href="ear-training-helpers.css" rel="stylesheet" />
+    <link href="pitch-match-config.css" rel="stylesheet" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+
+    <script
+      type="text/javascript"
+      src="bootstrap-prefers-color-scheme.js"
+    ></script>
+    <script type="text/javascript" src="pitch-match-config.js"></script>
+    <script type="text/javascript" src="ear-training-helpers.js"></script>
+    <script
+      src="https://unpkg.com/htmx.org@2.0.3"
+      integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://unpkg.com/tone@15"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script
+      src="https://unpkg.com/react@18/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <script type="text/babel">
+      let playingGlobal = false;
+      let globalTogglePlay = () => {
+        console.log("initial empty globalTogglePlay called...");
+      };
+
+      function startPlayLoop(synth, getPlaying, setLastChoice) {
+        // Play a note at the current BPM, then set a timeout for two beats later with
+        // a continuation to run if playing is still true.
+        function mkCont(lastChoice) {
+          return () => {
+            const config = getCurrentConfig();
+            if (getPlaying()) {
+              const choice = makeChoice(lastChoice, config);
+              console.log("playing choice: ", choice);
+              setLastChoice(choice);
+              //const duration = "8n."; // 4n feels too long, but 8n feels too short.
+              const duration = bpmSeconds(config.tempo);
+              Tone.Transport.bpm.value = getCurrentConfig().tempo;
+              synth.triggerAttackRelease(
+                midiTone(choice || 60),
+                duration,
+                Tone.now() + 2 * bpmSeconds(config.tempo),
+              );
+              setTimeout(mkCont(choice), 3 * bpmMilliseconds(config.tempo));
+            }
+          };
+        }
+        mkCont()();
+      }
+
+      function getDrawColor() {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "#ababab"
+          : "#111111";
+      }
+
+      function App() {
+        const [lastChoice, setLastChoice] = React.useState(null);
+        const [playingLocal, setPlayingLocal] = React.useState(false);
+        let config = {};
+        try {
+          config = getCurrentConfig();
+        } catch (e) {
+          // Ignore, this happens if things aren't fully loaded yet.
+        }
+
+        function getPlaying() {
+          return playingGlobal;
+        }
+        function play() {
+          const synth = new Tone.Synth({
+            envelope: {
+              attack: 0.05,
+              decay: 0.2,
+              sustain: 0.8,
+              // Want fast release, the note bleeds too far into the space at higher speeds.
+              release: 0.05,
+            },
+          }).toDestination();
+          Tone.Transport.bpm.value = getCurrentConfig().tempo;
+          setLastChoice(null);
+          playingGlobal = true;
+          setPlayingLocal(true);
+          startPlayLoop(synth, getPlaying, setLastChoice);
+        }
+        function stop() {
+          playingGlobal = false;
+          setPlayingLocal(false);
+          setLastChoice(null);
+        }
+        function togglePlay() {
+          if (playingGlobal) {
+            stop();
+          } else {
+            play();
+          }
+        }
+
+        globalTogglePlay = togglePlay;
+
+        return [<StaffDisplay config={config} note={lastChoice} />];
+      }
+
+      function StaffDisplay({ config, note }) {
+        // There is no software engineering here, only gross hacking until it works...
+        const noteUse = note || config.tonic;
+        console.log("StaffDisplay: ", noteUse);
+        console.log("playing: ", Tone.Frequency(noteUse, "midi").toNote());
+        const staffTopLineOffset = 100;
+        const staffLineSpace = 20;
+        const lineHeight = 2;
+        const bottomLineNote = 43;
+        const tonicStaffBaseArray = [0, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6];
+        const keySigNumArray = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5];
+        const keySigNum = keySigNumArray[config.tonic % 12];
+        const tonicSemisOffsetFromBottomLineNatural =
+          config.tonic - bottomLineNote;
+        const offsetFromC36 = (note) => {
+          const noteOffset = (note - (config.tonic % 12)) % 12;
+          const tonicOffset = tonicStaffBaseArray[config.tonic % 12];
+          const withinOctaveOffset = tonicStaffBaseArray[noteOffset];
+          const noteOctave = Math.floor(note / 12);
+          const offsetFromLowestC =
+            (noteOctave - 3) * 7 + tonicOffset + withinOctaveOffset;
+          return offsetFromLowestC;
+        };
+        const topDistanceFromBottom = 29; // number of positions from 2 ledger lines below to 2 above.
+        const offsetFromTop = (offsetFromBottom) => {
+          return (
+            staffTopLineOffset +
+            lineHeight / 2 +
+            (topDistanceFromBottom - offsetFromBottom - 5) *
+              0.5 *
+              staffLineSpace
+          );
+        };
+        const noteOffsetFromC36 = offsetFromC36(noteUse);
+        const noteCY = offsetFromTop(noteOffsetFromC36);
+        const noteOffsetFromTonic = (noteUse - (config.tonic % 12)) % 12;
+        const numSignatureMods = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5][
+          config.tonic % 12
+        ];
+        const numModsAbs = Math.abs(numSignatureMods);
+        const noteAccidentalArrayNumeric = [
+          0, -1, 0, -1, 0, 0, 1, 0, -1, 0, -1, 0,
+        ];
+        const noteAccidentalDirection =
+          noteAccidentalArrayNumeric[noteOffsetFromTonic];
+        const hasAccidental = noteAccidentalDirection !== 0;
+        // TODO - choose accidental based on numSignatureMods and
+        // noteOffsetFromC36.  The noteOffsetFromC36 determines the line/space for
+        // the note, so we can determine the key signature state of that position,
+        // then based on noteAccidentalDirection we can determine the
+        // accidental.
+        const noteAccidentalExtraOffsets = {
+          "": 0,
+          n: 7,
+          b: 7,
+          "#": 7,
+          "♭": 7,
+          "♭♭": 7,
+          "♯": 12,
+          "♯♯": 12,
+          "♮": 12,
+        };
+        const drawColor = getDrawColor();
+        // Add these constants for key signature positioning
+        const sharpPositions = [24, 21, 25, 22, 19, 23, 20]; // F C G D A E B
+        const flatPositions = [20, 23, 19, 22, 18]; // B E A D G
+        const signatureXOffset = 70; // Starting X position for key signature
+        const signatureXSpacing = 14; // Space between each accidental
+
+        // Function to generate key signature elements
+        const getKeySignatureElements = () => {
+          const elements = [];
+          const positions =
+            numSignatureMods > 0 ? sharpPositions : flatPositions;
+          const symbol = numSignatureMods > 0 ? "♯" : "♭";
+
+          for (let i = 0; i < numModsAbs; i++) {
+            const position = positions[i];
+            for (let j = 0; j < 2; j++) {
+              elements.push(
+                <text
+                  x={signatureXOffset + i * signatureXSpacing}
+                  y={
+                    offsetFromTop(position) +
+                    noteAccidentalExtraOffsets[symbol] +
+                    j * 7 * staffLineSpace
+                  }
+                  fill={drawColor}
+                  fontSize="2em"
+                >
+                  {symbol}
+                </text>,
+              );
+            }
+          }
+          return elements;
+        };
+
+        const accidentalSigns = ["♭♭", "♭", "♮", "♯", "♯♯"];
+
+        // Function to determine if a position has a sharp/flat in the key signature
+        const getAccidentalValueModifiedByKeySignature = (
+          staffPosition,
+          accidentalDirection,
+        ) => {
+          let value = accidentalDirection;
+          if (numSignatureMods > 0) {
+            // Sharps
+            if (
+              sharpPositions
+                .slice(0, numModsAbs)
+                .map((x) => x % 7)
+                .includes(staffPosition % 7)
+            ) {
+              return value + 1;
+            }
+          } else if (numSignatureMods < 0) {
+            // Flats
+            if (
+              flatPositions
+                .slice(0, numModsAbs)
+                .map((x) => x % 7)
+                .includes(staffPosition % 7)
+            ) {
+              return value - 1;
+            }
+          }
+          return value;
+        };
+
+        // Get the key signature accidental for this note's staffPosition
+        const noteAccidentalModified = getAccidentalValueModifiedByKeySignature(
+          noteOffsetFromC36,
+          noteAccidentalDirection,
+        );
+        const noteAccidental = hasAccidental
+          ? accidentalSigns[noteAccidentalModified + 2]
+          : "";
+
+        const noteAccidentalExtraOffset =
+          noteAccidentalExtraOffsets[noteAccidental] || 0;
+
+        return (
+          <svg
+            width="500"
+            height="500"
+            version="1.1"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {/* ledger line */}
+            {noteOffsetFromC36 >= 28
+              ? [
+                  <rect
+                    x="230"
+                    y={staffTopLineOffset - 2 * staffLineSpace}
+                    width="40"
+                    height={lineHeight}
+                    fill={drawColor}
+                  />,
+                ]
+              : []}
+            {/* ledger line */}
+            {noteOffsetFromC36 >= 26
+              ? [
+                  <rect
+                    x="230"
+                    y={staffTopLineOffset - 1 * staffLineSpace}
+                    width="40"
+                    height={lineHeight}
+                    fill={drawColor}
+                  />,
+                ]
+              : []}
+
+            {/* staff lines, treble half */}
+            {[...Array(5).keys()].map((_, i) => (
+              <rect
+                x="0"
+                y={staffTopLineOffset + i * staffLineSpace}
+                width="400"
+                height={lineHeight}
+                fill={drawColor}
+              />
+            ))}
+
+            {/* treble clef */}
+            <g
+              fill={drawColor}
+              stroke={drawColor}
+              transform={
+                "translate(" + -40 + ", " + (staffTopLineOffset - 33) + ")"
+              }
+            >
+              <path
+                id="trebleClefPath"
+                transform="scale(2.5)"
+                d="m 24.088273,33.581797 c 0.965339,-0.295132 1.956973,-0.478425 2.957128,-0.602459 0.912458,-0.113143 1.832274,-0.10097 2.748269,-0.05114 0.597893,0.01543 1.159849,0.174602 1.707656,0.401074 0.741751,0.433174 2.02547,0.964893 -1.458836,-0.819861 -0.08401,-0.04303 0.13975,0.127391 0.202755,0.197675 0.172199,0.192096 0.219044,0.288176 0.357032,0.507987 0.413297,0.667689 0.458668,1.286748 0.459417,2.052836 -0.0056,0.87997 -0.17667,1.612495 -0.545603,2.406295 -0.460808,0.894993 -1.18274,1.458368 -2.010865,1.990807 -1.102577,0.666517 -2.319996,1.083562 -3.553788,1.428689 -0.779592,0.199369 -1.575294,0.367308 -2.384197,0.364615 -0.461796,-0.0016 -0.645785,-0.04139 -1.099017,-0.102857 -0.407536,-0.08922 -0.583077,-0.105003 -0.964237,-0.277045 -0.150286,-0.06783 -0.578223,-0.317262 -0.433609,-0.238051 0.601295,0.32935 1.174911,0.715145 1.803655,0.988475 0.162331,0.07057 -0.264784,-0.236397 -0.38092,-0.369977 -0.119381,-0.137314 -0.21546,-0.293264 -0.32319,-0.439897 -0.737557,-1.312026 -0.512229,-2.801794 -0.307785,-4.22344 0.229699,-1.43433 0.617635,-2.844054 1.243259,-4.15861 0.139771,-0.293685 0.29883,-0.577794 0.448244,-0.866693 1.075542,-1.904293 2.446901,-3.616015 3.752728,-5.363267 0.850821,-1.150958 1.718734,-2.298615 2.363865,-3.582248 0.39406,-0.784068 0.407024,-0.900636 0.690126,-1.707329 0.301432,-1.221302 0.364204,-2.525632 -0.116187,-3.712478 -0.07741,-0.191234 -0.182814,-0.369901 -0.274219,-0.554852 -0.114216,-0.156368 -0.2168,-0.321934 -0.342646,-0.469104 -0.719831,-0.841804 -2.832478,-1.73646 -3.342094,-1.942217 -0.197362,-0.07968 -0.74783,0.276603 -0.871458,0.345255 -0.875086,0.73008 -1.370162,1.771822 -1.611441,2.871809 -0.05501,0.250797 -0.08294,0.506777 -0.124416,0.760166 -0.198725,1.69106 0.01914,3.382971 0.2729,5.054438 0.257384,1.688685 0.71113,3.335368 1.227342,4.960511 0.498718,1.469564 1.015799,2.932215 1.470617,4.416194 0.391633,1.280205 0.678151,2.587017 0.873258,3.910571 0.17272,1.207765 0.170225,2.427772 0.08704,3.641976 -0.08105,1.058384 -0.300458,2.097008 -0.582472,3.118043 -0.215143,0.803434 -0.545081,1.563513 -0.924153,2.301023 -0.307316,0.610529 -0.709476,1.158868 -1.157962,1.67145 -0.44526,0.504717 -1.018821,0.84029 -1.612707,1.13878 -0.724929,0.336613 -1.489967,0.561695 -2.289409,0.594302 -0.243306,0.05458 -0.605602,-0.145635 -0.843764,-0.09258 -0.02707,0.006 -0.05282,0.04013 -0.04859,0.06755 2.14e-4,0.0013 0.157593,0.274831 0.159748,0.27858 -0.04308,-0.0072 -0.08615,-0.01447 -0.129229,-0.0217 0,0 0.06303,0.04926 0.06303,0.04926 v 0 c 0.083,0.03885 0.165993,0.07769 0.248989,0.116544 0.812273,0.512469 1.614158,1.107691 2.618106,1.089713 0.859716,-0.04815 1.701619,-0.221684 2.483796,-0.594302 0.625823,-0.317939 1.227657,-0.673743 1.687674,-1.216898 0.456426,-0.534384 0.872811,-1.099053 1.185353,-1.731767 0.382008,-0.756854 0.718947,-1.535258 0.936495,-2.357374 0.28316,-1.040662 0.50786,-2.098066 0.587235,-3.176098 0.08593,-1.234051 0.08264,-2.474454 -0.08069,-3.702962 -0.195694,-1.343647 -0.490424,-2.668723 -0.894389,-3.966057 -0.465977,-1.491615 -0.992635,-2.961981 -1.507779,-4.437131 -0.529261,-1.616377 -1.001217,-3.253483 -1.270318,-4.936189 -0.260897,-1.649898 -0.484566,-3.320073 -0.324153,-4.993087 0.03565,-0.245806 0.05783,-0.493946 0.10695,-0.737417 0.208712,-1.034409 0.660031,-2.031965 1.518268,-2.678458 0.131115,-0.05702 0.254543,-0.136749 0.393341,-0.171054 0.124145,-0.03068 0.482613,0.05944 0.383077,-0.02085 -0.556456,-0.448854 -1.22185,-0.743274 -1.818551,-1.137051 -0.122458,-0.08081 0.271635,0.115405 0.393723,0.196774 0.355117,0.23668 0.447886,0.403899 0.717366,0.734844 0.09346,0.17182 0.20083,0.33677 0.280366,0.51546 0.49966,1.12256 0.465383,2.383799 0.190585,3.557154 -0.09161,0.272367 -0.170125,0.549494 -0.274826,0.817101 -0.63359,1.61938 -1.6505,3.049116 -2.665236,4.446181 -1.310708,1.760163 -2.681647,3.488432 -3.771192,5.399115 -0.154376,0.293095 -0.319598,0.580732 -0.463127,0.87929 -0.639931,1.331137 -1.0347,2.762509 -1.278003,4.215204 -0.220337,1.466866 -0.45892,2.983238 0.194584,4.379307 0.100071,0.157845 0.189151,0.323223 0.300213,0.473538 0.752498,1.018447 1.68747,1.243039 2.967473,1.988327 0.455761,0.265367 0.97689,0.390846 1.491867,0.473067 0.476805,0.0503 0.652149,0.08407 1.137177,0.07222 0.818751,-0.02 1.620108,-0.206684 2.406922,-0.418923 1.253127,-0.361923 2.491274,-0.7968 3.604847,-1.490342 0.86155,-0.571521 1.621954,-1.168463 2.083496,-2.122247 0.36127,-0.824711 0.552603,-1.621192 0.553667,-2.527342 0.0019,-0.774237 -0.05068,-1.525982 -0.461362,-2.206056 -0.110196,-0.193971 -0.371988,-0.68122 -0.55925,-0.803029 -0.85667,-0.557247 -1.785008,-1.199999 -2.764065,-1.609026 -0.555392,-0.196763 -1.127921,-0.301213 -1.718807,-0.311693 -0.914114,-0.03002 -1.829752,-0.0097 -2.737657,0.111459 -0.997163,0.150809 -1.976038,0.385024 -2.950238,0.644649 z"
+              />
+            </g>
+
+            {/* ledger line */}
+            {noteOffsetFromC36 == 14
+              ? [
+                  <rect
+                    x="230"
+                    y={staffTopLineOffset + 5 * staffLineSpace}
+                    width="40"
+                    height={lineHeight}
+                    fill={drawColor}
+                  />,
+                ]
+              : []}
+
+            {/* staff lines, bass half */}
+            {[...Array(5).keys()].map((_, i) => (
+              <rect
+                x="0"
+                y={staffTopLineOffset + (i + 6) * staffLineSpace}
+                width="400"
+                height={lineHeight}
+                fill={drawColor}
+              />
+            ))}
+
+            {/* bass clef */}
+            <g
+              id="bassClef"
+              fill={drawColor}
+              stroke={drawColor}
+              transform={
+                "translate(" +
+                -20 +
+                ", " +
+                (staffTopLineOffset + 5.5 * staffLineSpace) +
+                ")"
+              }
+            >
+              <g transform="scale(2)">
+                <path d="m 14.076325,10.966172 c 0.858801,-0.50808 1.783622,-0.89015 2.713383,-1.2463324 0.695659,-0.2761885 1.427522,-0.3790196 2.171039,-0.372505 0.728356,0.035359 1.392004,0.3013911 2.026381,0.6409152 C 16.91153,7.753461 18.696121,8.536293 19.43636,9.1957913 c 0.300772,0.2679665 0.526286,0.5700818 0.750275,0.9018117 0.49925,0.788494 0.766248,1.681448 0.962772,2.585383 0.216955,1.121844 0.24375,2.26806 0.255115,3.407069 0.0062,1.301072 -0.07147,2.597875 -0.221568,3.889643 -0.153692,1.311517 -0.410406,2.60694 -0.702913,3.893566 -0.316324,1.381018 -0.679925,2.750465 -1.055766,4.116271 -0.384302,1.538303 -0.977827,3.003158 -1.664616,4.427903 -0.485046,0.940194 -1.056036,1.835454 -1.784779,2.606505 -0.471501,0.498875 -0.697982,0.670335 -1.221626,1.121982 -0.775639,0.684749 -1.674005,1.211932 -2.47836,1.858552 -0.399781,0.321384 -0.474821,0.422833 -0.81144,0.778571 -0.16354,0.344411 -0.275293,0.414136 -0.144837,0.81417 0.05648,0.173191 0.223293,0.30198 0.260847,0.480232 0.01234,0.05855 -0.08978,0.07911 -0.134672,0.118663 0,0 0.0659,0.04536 0.0659,0.04536 v 0 c 0.803222,0.0028 -0.324259,-0.02843 1.151176,0.227288 0.62135,0.10769 0.730351,0.03671 1.315654,-0.07308 0.50985,-0.208028 0.69685,-0.266086 1.187426,-0.544877 0.91885,-0.522179 1.744291,-1.198809 2.576639,-1.843707 0.557153,-0.482886 0.753162,-0.626832 1.253328,-1.160775 0.747556,-0.798036 1.336648,-1.719564 1.818973,-2.698488 0.675791,-1.452374 1.257569,-2.944233 1.668661,-4.495096 0.37873,-1.375473 0.727321,-2.759535 1.024037,-4.155207 0.27019,-1.31312 0.515604,-2.632397 0.642029,-3.968466 0.117491,-1.322897 0.189105,-2.649577 0.137078,-3.9782 -0.03474,-1.172346 -0.06798,-2.352486 -0.307907,-3.504742 -0.221788,-0.95482 -0.499044,-1.902707 -1.025574,-2.740249 C 22.728921,10.974425 22.690484,10.895052 22.433458,10.59797 21.468306,9.4824023 19.955822,8.9239283 18.749247,8.1999672 18.10436,7.9082696 17.436257,7.7017552 16.719035,7.7270711 c -0.770081,0.044434 -1.384716,0.2235557 -2.082998,0.555321 -0.88278,0.4054734 -1.723846,0.8853267 -2.550896,1.3945065 z" />
+                <path d="m 30.168664,12.788065 c 0.78018,-0.287299 1.663729,-0.344534 2.413487,-0.707455 0.161002,-0.212386 0.179332,-0.159042 -0.256966,-0.428184 -0.270732,-0.167007 -0.570256,-0.282057 -0.855382,-0.423086 0,0 0.06561,0.04577 0.06561,0.04577 v 0 c -0.357309,-0.334621 -0.530979,-0.578617 -0.9882,-0.743359 -0.07623,-0.02747 -0.16206,-3.18e-4 -0.243092,-4.5e-4 -0.801933,0.158687 -1.527955,0.577626 -2.32891,0.749494 z" />
+                <path d="m 32.027516,19.889054 c 0.381746,-0.160006 0.777441,-0.289021 1.151869,-0.466617 0.09706,-0.04604 0.227541,-0.06093 0.284014,-0.152312 0.104651,-0.16935 -0.13802,-0.491872 -0.194273,-0.591247 -0.133601,-0.123078 -0.267203,-0.246156 -0.400804,-0.369234 0,0 -0.06951,-0.0396 -0.06951,-0.0396 v 0 c -0.159943,-0.07076 -0.319889,-0.141529 -0.479832,-0.212293 -0.282178,-0.08406 -0.689512,-0.229759 -0.992058,-0.222255 -0.125389,0.0031 -0.243374,0.06131 -0.363143,0.09856 -0.40545,0.126066 -0.795446,0.297107 -1.199658,0.426824 z" />
+              </g>
+            </g>
+
+            {/* ledger line */}
+            {noteOffsetFromC36 < 3
+              ? [
+                  <rect
+                    x="230"
+                    y={staffTopLineOffset + 11 * staffLineSpace}
+                    width="40"
+                    height={lineHeight}
+                    fill={drawColor}
+                  />,
+                ]
+              : []}
+            {/* ledger line */}
+            {noteOffsetFromC36 < 1
+              ? [
+                  <rect
+                    x="230"
+                    y={staffTopLineOffset + 12 * staffLineSpace}
+                    width="40"
+                    height={lineHeight}
+                    fill={drawColor}
+                  />,
+                ]
+              : []}
+
+            {/* accidental for note head (may be empty string) */}
+            <text
+              x="205"
+              y={noteCY + noteAccidentalExtraOffset}
+              fill={drawColor}
+              font-size="2em"
+            >
+              {noteAccidental}
+            </text>
+            {/* note head */}
+            <circle
+              cx="250"
+              cy={noteCY}
+              r="10"
+              stroke={drawColor}
+              fill={drawColor}
+            />
+
+            {/* Key signature */}
+            {getKeySignatureElements()}
+          </svg>
+        );
+      }
+
+      const container = document.getElementById("staffDisplayRoot");
+      const root = ReactDOM.createRoot(container);
+      root.render(<App />);
+    </script>
+  </head>
+
+  <body>
+    <h1>Sight Sing Ear Training Tool</h1>
+    <hr />
+    <div>
+      <button
+        class="btn btn-secondary"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#instructions"
+        aria-expanded="false"
+        aria-controls="instructions"
+      >
+        Show/Hide Explanation
+      </button>
+      <div class="collapse" id="instructions">
+        <div class="card card-body">
+          <h2>About this tool</h2>
+
+          <p>
+            This tool will display a note for two beats and play the note on
+            beat three. You should read the note on beat 1, sing the note on
+            beat 2, and hear in beat 3 what the correct note is.
+          </p>
+          <p>
+            Choose a pitch range (as MIDI note values), and a tonic note. Set
+            weights for each scale degree (in solfege), and for each desired
+            interval. Weight 0 means that the given note or interval will not be
+            generated. Weights for notes and intervals are multiplied to choose
+            which note to play next. Additional intervals can be added, any
+            interval beyond those listed effectively has weight 0. If you
+            configure things weirdly, such that it can not choose a next note,
+            it will fall back to playing the configured tonic note.
+          </p>
+          <p>
+            Each of these tools has a configuration import/export feature to
+            save your configuration (and presets) in JSON, as well as edit them
+            by hand. To import a saved configuration, paste it into the box and
+            use the Import Config button. Press the Export Config button to
+            replace the text in the box with the current configuration. Use
+            Control+A to select all of the text, copy it, and paste it somewhere
+            to save or edit.
+          </p>
+          <p>
+            This is a companion to the
+            <a href="pitch-match.html"> Pitch Match</a> tool and the
+            <a href="chord-match.html"> Chord Match</a> tool.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="appSpace">
+      <div
+        hx-swap="innerHTML"
+        hx-trigger="load"
+        hx-get="pitch-match-config.html"
+        hx-on::after-request="initializeConfigEditor()"
+      >
+        Loading configuration editor...
+      </div>
+      <button id="playButton" onclick="globalTogglePlay()">Play/Pause</button>
+      <button onclick="playMajorCadence(getCurrentConfig())">
+        Play Major Cadence
+      </button>
+      <button onclick="playMinorCadence(getCurrentConfig())">
+        Play Minor Cadence
+      </button>
+      <div id="staffDisplayRoot"></div>
+    </div>
+  </body>
+</html>
