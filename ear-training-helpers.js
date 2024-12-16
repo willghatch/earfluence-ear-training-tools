@@ -89,7 +89,17 @@ function produceMidiNoteWeights(lastChoice, config) {
   return weights;
 }
 
+const debugSweepMode = false;
 function makeChoice(lastChoice, config) {
+  if (debugSweepMode) {
+    if (!lastChoice) {
+      return config.lowPitch;
+    } else if (lastChoice >= config.highPitch) {
+      return config.lowPitch;
+    } else {
+      return lastChoice + 1;
+    }
+  }
   const weights = produceMidiNoteWeights(lastChoice, config);
   return makeWeightedChoice(weights);
 }

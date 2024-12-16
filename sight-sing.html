@@ -133,18 +133,22 @@
         const staffLineSpace = 20;
         const lineHeight = 2;
         const bottomLineNote = 43;
+        const tonicStaffOffsets = [0, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6];
         const tonicStaffBaseArray = [0, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6];
         const keySigNumArray = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5];
         const keySigNum = keySigNumArray[config.tonic % 12];
         const tonicSemisOffsetFromBottomLineNatural =
           config.tonic - bottomLineNote;
         const offsetFromC36 = (note) => {
-          const noteOffset = (note - (config.tonic % 12)) % 12;
-          const tonicOffset = tonicStaffBaseArray[config.tonic % 12];
-          const withinOctaveOffset = tonicStaffBaseArray[noteOffset];
+          const noteOffsetFromTonic = (note - (config.tonic % 12)) % 12;
+          const withinOctaveOffset = tonicStaffBaseArray[noteOffsetFromTonic];
+          const noteFromC = note % 12;
+          const tonicFromC = config.tonic % 12;
+          const tonicStaffOffset = tonicStaffOffsets[tonicFromC];
+          const noteStaffBase = tonicStaffBaseArray[noteOffsetFromTonic];
           const noteOctave = Math.floor(note / 12);
-          const offsetFromLowestC =
-            (noteOctave - 3) * 7 + tonicOffset + withinOctaveOffset;
+          const useOctave = noteOctave - ((noteFromC < tonicFromC) ? 1 : 0);
+          const offsetFromLowestC = (useOctave - 3) * 7 + noteStaffBase + tonicStaffOffset;
           return offsetFromLowestC;
         };
         const topDistanceFromBottom = 29; // number of positions from 2 ledger lines below to 2 above.
