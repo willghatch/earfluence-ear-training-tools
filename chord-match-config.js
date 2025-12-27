@@ -1,185 +1,248 @@
-const defaultChordPresets = {
-  "no change": [],
-  "Major Scale Triads": [
+const inputSchema = {
+  "title": "Chord Match Configuration",
+  "sections": [
     {
-      name: "Major",
-      offsets: [0, 4, 7],
-      weights: [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0],
+      "title": "Import/Export Configuration",
+      "cssClass": "config-section",
+      "controls": [
+        {
+          "type": "import-export"
+        }
+      ]
     },
     {
-      name: "minor",
-      offsets: [0, 3, 7],
-      weights: [0, 0, 10, 0, 10, 0, 0, 0, 0, 10, 0, 0],
+      "title": "Chord Configurations",
+      "cssClass": "config-section",
+      "controls": [
+        {
+          "type": "preset-selector",
+          "targetField": "chords",
+          "presetSource": "chordPresets"
+        },
+        {
+          "type": "dynamicList",
+          "id": "chords",
+          "itemType": {
+            "type": "struct",
+            "cssClass": "chord-config",
+            "fields": [
+              {
+                "type": "text",
+                "id": "name",
+                "label": "Name:",
+                "default": ""
+              },
+              {
+                "type": "json",
+                "id": "offsets",
+                "label": "Offsets:",
+                "default": [0]
+              },
+              {
+                "type": "label",
+                "text": "Weights for bass note:"
+              },
+              {
+                "type": "fixedList",
+                "id": "weights",
+                "itemType": {
+                  "type": "number",
+                  "min": 0
+                },
+                "labels": ["do", "ra", "re", "me", "mi", "fa", "fi", "so", "le", "la", "te", "ti"],
+                "default": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "cssClass": "weights-grid"
+              }
+            ]
+          },
+          "addButtonLabel": "+ Add Chord",
+          "default": [
+            {
+              "name": "Major",
+              "offsets": [0, 4, 7],
+              "weights": [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0]
+            },
+            {
+              "name": "minor",
+              "offsets": [0, 3, 7],
+              "weights": [0, 0, 10, 0, 10, 0, 0, 0, 0, 10, 0, 0]
+            },
+            {
+              "name": "diminished",
+              "offsets": [0, 3, 6],
+              "weights": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10]
+            }
+          ]
+        }
+      ]
     },
     {
-      name: "diminished",
-      offsets: [0, 3, 6],
-      weights: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10],
-    },
+      "title": "Playback Settings",
+      "cssClass": "config-section",
+      "controls": [
+        {
+          "type": "checkbox",
+          "id": "arpeggiate",
+          "label": "Arpeggiate Chords",
+          "default": false
+        },
+        {
+          "type": "radio",
+          "id": "arpeggioDirection",
+          "label": "Arpeggio Direction:",
+          "options": [
+            { "value": "forward", "label": "Forward" },
+            { "value": "backward", "label": "Backward" },
+            { "value": "both", "label": "Both" }
+          ],
+          "default": "forward"
+        },
+        {
+          "type": "number",
+          "id": "arpeggiationSpeed",
+          "label": "Arpeggiation Speed (beats):",
+          "min": 0.05,
+          "step": 0.05,
+          "default": 0.1
+        },
+        {
+          "type": "number",
+          "id": "noteDuration",
+          "label": "Note Duration (beats):",
+          "min": 0.1,
+          "step": 0.5,
+          "default": 1
+        },
+        {
+          "type": "number",
+          "id": "cycleBeats",
+          "label": "Cycle Duration (beats):",
+          "min": 0.1,
+          "step": 0.5,
+          "default": 2
+        },
+        {
+          "type": "int",
+          "id": "lowPitch",
+          "label": "Low Pitch (MIDI):",
+          "min": 0,
+          "max": 127,
+          "default": 50
+        },
+        {
+          "type": "int",
+          "id": "highPitch",
+          "label": "High Pitch (MIDI):",
+          "min": 0,
+          "max": 127,
+          "default": 75
+        },
+        {
+          "type": "int",
+          "id": "tonic",
+          "label": "Tonic (MIDI):",
+          "min": 0,
+          "max": 127,
+          "default": 60,
+          "displayFunction": "noteName",
+          "displayId": "tonicName",
+          "actions": [
+            {
+              "label": "Random",
+              "functionName": "randomTonic"
+            }
+          ]
+        },
+        {
+          "type": "int",
+          "id": "tempo",
+          "label": "Tempo (BPM):",
+          "min": 1,
+          "default": 80
+        }
+      ]
+    }
   ],
-  "minor Scale Triads": [
-    {
-      name: "Major",
-      offsets: [0, 4, 7],
-      weights: [0, 0, 0, 10, 0, 0, 0, 0, 10, 0, 10, 0],
-    },
-    {
-      name: "minor",
-      offsets: [0, 3, 7],
-      weights: [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0],
-    },
-    {
-      name: "diminished",
-      offsets: [0, 3, 6],
-      weights: [0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    },
-  ],
+  "presets": {
+    "chordPresets": {
+      "no change": [],
+      "Major Scale Triads": [
+        {
+          "name": "Major",
+          "offsets": [0, 4, 7],
+          "weights": [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0]
+        },
+        {
+          "name": "minor",
+          "offsets": [0, 3, 7],
+          "weights": [0, 0, 10, 0, 10, 0, 0, 0, 0, 10, 0, 0]
+        },
+        {
+          "name": "diminished",
+          "offsets": [0, 3, 6],
+          "weights": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10]
+        }
+      ],
+      "minor Scale Triads": [
+        {
+          "name": "Major",
+          "offsets": [0, 4, 7],
+          "weights": [0, 0, 0, 10, 0, 0, 0, 0, 10, 0, 10, 0]
+        },
+        {
+          "name": "minor",
+          "offsets": [0, 3, 7],
+          "weights": [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0]
+        },
+        {
+          "name": "diminished",
+          "offsets": [0, 3, 6],
+          "weights": [0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        }
+      ]
+    }
+  }
 };
 
-let chordPresets = defaultChordPresets;
-
-const exampleConfig = {
-  lowPitch: 50,
-  highPitch: 75,
-  tempo: 80, // BPM
-  tonic: 60, // Tonic as midi note number.
-  arpeggiate: false,
-  arpeggioDirection: "forward",
-  arpeggiationSpeed: 0.1,
-  cycleBeats: 2,
-  noteDuration: 1,
-  chords: defaultChordPresets["Major Scale Triads"],
-  chordPresets: defaultChordPresets,
-};
-
-// Get current configuration from UI
-function getCurrentConfig() {
-  const config = {
-    lowPitch: parseInt(document.getElementById("lowPitch").value),
-    highPitch: parseInt(document.getElementById("highPitch").value),
-    tempo: parseInt(document.getElementById("tempo").value),
-    tonic: parseInt(document.getElementById("tonic").value),
-    chords: [],
-    chordPresets: chordPresets,
-    arpeggiate: document.getElementById("arpeggiate").checked,
-    arpeggioDirection: document.querySelector(
-      'input[name="arpeggioDirection"]:checked',
-    ).value,
-    arpeggiationSpeed: parseFloat(
-      document.getElementById("arpeggiationSpeed").value,
-    ),
-    cycleBeats: parseFloat(document.getElementById("cycleBeats").value),
-    noteDuration: parseFloat(document.getElementById("noteDuration").value),
-  };
-
-  const chordDivs = document.querySelectorAll(".chord-config");
-  chordDivs.forEach((div) => {
-    const chord = {
-      name: div.querySelector(".chord-name").value,
-      offsets: JSON.parse(div.querySelector(".chord-offsets").value),
-      weights: Array.from(div.querySelectorAll(".chord-weight")).map((input) =>
-        parseInt(input.value),
-      ),
-    };
-    config.chords.push(chord);
-  });
-
-  return config;
-}
-
-// Set UI from configuration
-function setConfig(config) {
-  document.getElementById("lowPitch").value = config.lowPitch;
-  document.getElementById("highPitch").value = config.highPitch;
-  document.getElementById("tempo").value = config.tempo;
-  document.getElementById("tonic").value = config.tonic;
-  document.getElementById("tonicName").textContent = noteName(config.tonic);
-  document.getElementById("arpeggiate").checked = config.arpeggiate;
-  document.querySelector(
-    `input[name="arpeggioDirection"][value="${config.arpeggioDirection}"]`,
-  ).checked = true;
-  document.getElementById("arpeggiationSpeed").value = config.arpeggiationSpeed;
-  document.getElementById("cycleBeats").value = config.cycleBeats;
-  document.getElementById("noteDuration").value = config.noteDuration;
-
-  chordPresets = config.chordPresets;
-  const chordsContainer = document.getElementById("chordsContainer");
-  chordsContainer.innerHTML = "";
-  config.chords.forEach((chord) => {
-    chordsContainer.appendChild(createChordConfigDiv(chord));
-  });
-}
+let formAPI;
 
 function randomTonic() {
-  const config = getCurrentConfig();
-  setConfig({ ...config, tonic: getRandomPitchInRange(config) });
+  const config = formAPI.getCurrentConfig();
+  formAPI.setConfig({ ...config, tonic: getRandomPitchInRange(config) });
 }
 
+// Initialize the config editor
 function initializeConfigEditor() {
-  document.getElementById("addChord").addEventListener("click", () => {
-    const chordsContainer = document.getElementById("chordsContainer");
-    chordsContainer.appendChild(createChordConfigDiv());
+  formAPI = inputCreate(inputSchema, '#config-container', {
+    functions: {
+      noteName: noteName,
+      randomTonic: randomTonic
+    }
   });
-
-  setupTonicNameUpdate();
-  initializePresetSelect("chordPreset", getCurrentConfig().chordPresets);
-  setConfig(exampleConfig);
 }
 
-function importConfig() {
-  importConfigHelper(setConfig);
+// Export API for external use
+function getCurrentConfig() {
+  return formAPI ? formAPI.getCurrentConfig() : null;
 }
 
-function exportConfig() {
-  document.getElementById("configIO").value = JSON.stringify(
-    getCurrentConfig(),
-    null,
-    2,
-  );
+function setCurrentConfig(config) {
+  if (formAPI) {
+    formAPI.setConfig(config);
+  }
 }
 
 function resetConfig() {
-  setConfig(exampleConfig);
+  if (formAPI) {
+    formAPI.resetConfig();
+  }
 }
 
-function createChordConfigDiv(
-  chord = { name: "", offsets: [0], weights: Array(12).fill(0) },
-) {
-  const div = document.createElement("div");
-  div.className = "chord-config";
-
-  div.innerHTML = `
-    <div class="chord-header">
-      <div>
-        <label>Name:</label>
-        <input type="text" class="chord-name" value="${chord.name}">
-      </div>
-      <div>
-        <label>Offsets:</label>
-        <input type="text" class="chord-offsets" value="${JSON.stringify(chord.offsets)}">
-      </div>
-      <button class="remove-chord">Remove</button>
-    </div>
-    <div>Weights for bass note:</div>
-    <div class="weights-grid">
-      ${solfegeLabels
-        .map(
-          (label, i) => `
-        <div class="weight-item">
-          <label>${label}:</label>
-          <input type="number" class="chord-weight" min="0" value="${chord.weights[i]}">
-        </div>
-      `,
-        )
-        .join("")}
-    </div>
-  `;
-
-  div
-    .querySelector(".remove-chord")
-    .addEventListener("click", () => div.remove());
-  return div;
-}
+// Make functions globally accessible
+window.initializeConfigEditor = initializeConfigEditor;
+window.getCurrentConfig = getCurrentConfig;
+window.setCurrentConfig = setCurrentConfig;
+window.resetConfig = resetConfig;
 
 function produceChordWeights(config) {
   // Make weight array of chords, [{weightEnd, choice: [solfegeOffset, chord]}].
