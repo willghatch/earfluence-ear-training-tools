@@ -104,6 +104,20 @@ function makeChoice(lastChoice, config) {
   return makeWeightedChoice(weights);
 }
 
+function makeChoices(lastChoices, config) {
+  // Make choices for multiple voices.
+  // lastChoices is a list of previous notes, one per voice.
+  // Returns a list of new notes, one per voice.
+  // If the previous note list is too short, default to null for any notes that are missing.
+  const numVoices = config.numVoices || 1;
+  const choices = [];
+  for (let i = 0; i < numVoices; i++) {
+    const lastChoice = (lastChoices && i < lastChoices.length) ? lastChoices[i] : null;
+    choices.push(makeChoice(lastChoice, config));
+  }
+  return choices;
+}
+
 function bpmSeconds(bpm) {
   const bps = bpm / 60;
   const hz = 1 / bps;

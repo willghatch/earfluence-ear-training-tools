@@ -30,7 +30,9 @@
       let playingGlobal = false;
 
       function play() {
-        const synth = new Tone.PolySynth({
+        const config = getCurrentConfig();
+        const instrument = config.instrument || "default";
+        const synthOptions = {
           envelope: {
             attack: 0.05,
             decay: 0.2,
@@ -38,8 +40,13 @@
             // Want fast release, the note bleeds too far into the space at higher speeds.
             release: 0.05,
           },
-        }).toDestination();
-        Tone.Transport.bpm.value = getCurrentConfig().tempo;
+        };
+        // Only add oscillator type if not using default
+        if (instrument !== "default") {
+          synthOptions.oscillator = { type: instrument };
+        }
+        const synth = new Tone.PolySynth(Tone.Synth, synthOptions).toDestination();
+        Tone.Transport.bpm.value = config.tempo;
         playingGlobal = true;
         startPlaying(synth, getPlaying, undefined);
       }
@@ -195,16 +202,21 @@
           </p>
           <p>
             You can also use the arpeggiate mode, note, and cycle duration
-            parameters to make a “chunked” version of pitch matching. You can do
+            parameters to make a "chunked" version of pitch matching. You can do
             this with arpeggios of actual chords, or you can create presets that
-            include “chords” that are actually scale fragments or other patterns
-            that you want to practice recognizing as a “chunk”. This idea is
+            include "chords" that are actually scale fragments or other patterns
+            that you want to practice recognizing as a "chunk". This idea is
             similar to chucking word fragments, words, and common phrases in
             natural language for speaking, listening, or reading. If you can
-            recognize a group of notes as a single “chunk”, it can be easier to
+            recognize a group of notes as a single "chunk", it can be easier to
             recognize and remember larger musical phrases. Along with increasing
             recognition (and production) speed, chunking can help improve
             musical fluency.
+          </p>
+          <p>
+            You can select different instruments (sine, square, sawtooth,
+            triangle) to change the timbre of the playback. This can help train
+            your ear to recognize chords with different tonal qualities.
           </p>
           <p>
             Each of these tools has a configuration import/export feature to

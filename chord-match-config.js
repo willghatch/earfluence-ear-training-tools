@@ -91,9 +91,9 @@ const inputSchema = {
           "id": "arpeggioDirection",
           "label": "Arpeggio Direction:",
           "options": [
-            { "value": "forward", "label": "Forward" },
-            { "value": "backward", "label": "Backward" },
-            { "value": "both", "label": "Both" }
+            { "value": "forward"},
+            { "value": "backward"},
+            { "value": "both"}
           ],
           "default": "forward"
         },
@@ -164,6 +164,19 @@ const inputSchema = {
           "label": "Tempo (BPM):",
           "min": 1,
           "default": 80
+        },
+        {
+          "type": "radio",
+          "id": "instrument",
+          "label": "Instrument:",
+          "options": [
+            { "value": "default"},
+            { "value": "sine"},
+            { "value": "square"},
+            { "value": "sawtooth"},
+            { "value": "triangle"}
+          ],
+          "default": "default"
         }
       ]
     }

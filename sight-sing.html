@@ -41,7 +41,7 @@
         console.log("initial empty globalTogglePlay called...");
       };
 
-      function startPlayLoop(synth, getPlaying, setLastChoice) {
+      function startPlayLoop(synths, getPlaying, setLastChoice) {
         // Play a sequence of notes with sight-singing timing
         function mkCont(lastChoice) {
           return () => {
@@ -51,12 +51,13 @@
               const extraRests = config.extraRests !== undefined ? config.extraRests : 1;
               const duration = bpmSeconds(config.tempo);
               const beatMs = bpmMilliseconds(config.tempo);
+              const numVoices = config.numVoices || 1;
 
-              // Generate sequence of notes
+              // Generate sequence of notes for each voice
               const sequence = [];
               let currentChoice = lastChoice;
               for (let i = 0; i < sequenceLength; i++) {
-                currentChoice = makeChoice(currentChoice, config);
+                currentChoice = makeChoices(currentChoice, config);
                 sequence.push(currentChoice);
               }
               console.log("playing sequence: ", sequence);
@@ -66,16 +67,21 @@
 
               Tone.Transport.bpm.value = config.tempo;
 
-              // Wait (sequenceLength + extraRests) beats, then play each note
+              // Wait (sequenceLength + extraRests) beats, then play each set of simultaneous notes
               const delayBeforePlay = Math.max(0, sequenceLength + extraRests);
 
-              sequence.forEach((note, index) => {
+              sequence.forEach((notes, index) => {
                 setTimeout(() => {
-                  synth.triggerAttackRelease(
-                    midiTone(note || 60),
-                    duration,
-                    Tone.now()
-                  );
+                  // Play each voice with its corresponding synth
+                  notes.forEach((note, voiceIdx) => {
+                    if (voiceIdx < synths.length) {
+                      synths[voiceIdx].triggerAttackRelease(
+                        midiTone(note || 60),
+                        duration,
+                        Tone.now()
+                      );
+                    }
+                  });
                 }, (delayBeforePlay + index) * beatMs);
               });
 
@@ -108,20 +114,36 @@
           return playingGlobal;
         }
         function play() {
-          const synth = new Tone.Synth({
-            envelope: {
-              attack: 0.05,
-              decay: 0.2,
-              sustain: 0.8,
-              // Want fast release, the note bleeds too far into the space at higher speeds.
-              release: 0.05,
-            },
-          }).toDestination();
-          Tone.Transport.bpm.value = getCurrentConfig().tempo;
+          const config = getCurrentConfig();
+          const instruments = config.instruments || ["default"];
+          const numVoices = config.numVoices || 1;
+
+          // Create a synth for each voice with the corresponding instrument
+          const synths = [];
+          for (let i = 0; i < numVoices; i++) {
+            const instrumentType = i < instruments.length ? instruments[i] : instruments[instruments.length - 1];
+            const synthOptions = {
+              envelope: {
+                attack: 0.05,
+                decay: 0.2,
+                sustain: 0.8,
+                // Want fast release, the note bleeds too far into the space at higher speeds.
+                release: 0.05,
+              },
+            };
+            // Only add oscillator type if not using default
+            if (instrumentType !== "default") {
+              synthOptions.oscillator = { type: instrumentType };
+            }
+            const synth = new Tone.Synth(synthOptions).toDestination();
+            synths.push(synth);
+          }
+
+          Tone.Transport.bpm.value = config.tempo;
           setLastChoice(null);
           playingGlobal = true;
           setPlayingLocal(true);
-          startPlayLoop(synth, getPlaying, setLastChoice);
+          startPlayLoop(synths, getPlaying, setLastChoice);
         }
         function stop() {
           playingGlobal = false;
@@ -143,10 +165,27 @@
 
       function StaffDisplay({ config, note }) {
         // There is no software engineering here, only gross hacking until it works...
-        // Handle both single note and array of notes
-        const noteSequence = Array.isArray(note) ? note : (note ? [note] : [config.tonic]);
+        // Handle both single note and array of notes (or array of arrays for multiple voices)
+        // Flatten the structure to handle both old single-voice and new multi-voice formats
+        let noteSequence;
+        if (!note) {
+          noteSequence = [[config.tonic]];
+        } else if (Array.isArray(note)) {
+          if (note.length === 0) {
+            noteSequence = [[config.tonic]];
+          } else if (Array.isArray(note[0])) {
+            // Multi-voice format: array of arrays
+            noteSequence = note;
+          } else {
+            // Old single-voice format: array of notes
+            noteSequence = note.map(n => [n]);
+          }
+        } else {
+          // Single note
+          noteSequence = [[note]];
+        }
         console.log("StaffDisplay: ", noteSequence);
-        noteSequence.forEach(n => console.log("playing: ", Tone.Frequency(n, "midi").toNote()));
+        noteSequence.forEach(notes => notes.forEach(n => console.log("playing: ", Tone.Frequency(n, "midi").toNote())));
         const staffTopLineOffset = 100;
         const staffLineSpace = 20;
         const lineHeight = 2;
@@ -273,32 +312,42 @@
           return value;
         };
 
-        // Process each note in the sequence
-        const noteData = noteSequence.map((noteUse, index) => {
-          const noteX = firstNoteX + index * noteSpacing;
-          const noteOffsetFromC36 = offsetFromC36(noteUse);
-          const noteCY = offsetFromTop(noteOffsetFromC36);
-          const noteOffsetFromTonic = (noteUse - (config.tonic % 12)) % 12;
-          const noteAccidentalDirection = noteAccidentalArrayNumeric[noteOffsetFromTonic];
-          const hasAccidental = noteAccidentalDirection !== 0;
-          const noteAccidentalModified = getAccidentalValueModifiedByKeySignature(
-            noteOffsetFromC36,
-            noteAccidentalDirection,
-          );
-          const accidentalSigns = ["♭♭", "♭", "♮", "♯", "♯♯"];
-          const noteAccidental = hasAccidental
-            ? accidentalSigns[noteAccidentalModified + 2]
-            : "";
-          const noteAccidentalExtraOffset = noteAccidentalExtraOffsets[noteAccidental] || 0;
+        // Process each set of simultaneous notes in the sequence (each set contains one note per voice)
+        const noteColors = config.noteColors || ["default"];
+        const noteData = noteSequence.map((simultaneousNotes, beatIndex) => {
+          const noteX = firstNoteX + beatIndex * noteSpacing;
 
-          return {
-            noteUse,
-            noteX,
-            noteOffsetFromC36,
-            noteCY,
-            noteAccidental,
-            noteAccidentalExtraOffset,
-          };
+          // Process each note in this beat
+          return simultaneousNotes.map((noteUse, voiceIdx) => {
+            const noteOffsetFromC36 = offsetFromC36(noteUse);
+            const noteCY = offsetFromTop(noteOffsetFromC36);
+            const noteOffsetFromTonic = (noteUse - (config.tonic % 12)) % 12;
+            const noteAccidentalDirection = noteAccidentalArrayNumeric[noteOffsetFromTonic];
+            const hasAccidental = noteAccidentalDirection !== 0;
+            const noteAccidentalModified = getAccidentalValueModifiedByKeySignature(
+              noteOffsetFromC36,
+              noteAccidentalDirection,
+            );
+            const accidentalSigns = ["♭♭", "♭", "♮", "♯", "♯♯"];
+            const noteAccidental = hasAccidental
+              ? accidentalSigns[noteAccidentalModified + 2]
+              : "";
+            const noteAccidentalExtraOffset = noteAccidentalExtraOffsets[noteAccidental] || 0;
+
+            // Get color for this voice
+            const colorConfig = voiceIdx < noteColors.length ? noteColors[voiceIdx] : noteColors[noteColors.length - 1];
+            const noteColor = colorConfig === "default" ? drawColor : colorConfig;
+
+            return {
+              noteUse,
+              noteX,
+              noteOffsetFromC36,
+              noteCY,
+              noteAccidental,
+              noteAccidentalExtraOffset,
+              noteColor,
+            };
+          });
         });
 
         return (
@@ -309,27 +358,29 @@
             xmlns="http://www.w3.org/2000/svg"
           >
             {/* Upper ledger lines for all notes */}
-            {noteData.map((note, idx) => (
-              <React.Fragment key={`upper-ledgers-${idx}`}>
-                {note.noteOffsetFromC36 >= 28 && (
-                  <rect
-                    x={note.noteX - 20}
-                    y={staffTopLineOffset - 2 * staffLineSpace}
-                    width="40"
-                    height={lineHeight}
-                    fill={drawColor}
-                  />
-                )}
-                {note.noteOffsetFromC36 >= 26 && (
-                  <rect
-                    x={note.noteX - 20}
-                    y={staffTopLineOffset - 1 * staffLineSpace}
-                    width="40"
-                    height={lineHeight}
-                    fill={drawColor}
-                  />
-                )}
-              </React.Fragment>
+            {noteData.map((notesAtBeat, beatIdx) => (
+              notesAtBeat.map((note, noteIdx) => (
+                <React.Fragment key={`upper-ledgers-${beatIdx}-${noteIdx}`}>
+                  {note.noteOffsetFromC36 >= 28 && (
+                    <rect
+                      x={note.noteX - 20}
+                      y={staffTopLineOffset - 2 * staffLineSpace}
+                      width="40"
+                      height={lineHeight}
+                      fill={drawColor}
+                    />
+                  )}
+                  {note.noteOffsetFromC36 >= 26 && (
+                    <rect
+                      x={note.noteX - 20}
+                      y={staffTopLineOffset - 1 * staffLineSpace}
+                      width="40"
+                      height={lineHeight}
+                      fill={drawColor}
+                    />
+                  )}
+                </React.Fragment>
+              ))
             ))}
 
             {/* staff lines, treble half */}
@@ -360,17 +411,19 @@
             </g>
 
             {/* Middle ledger line for all notes */}
-            {noteData.map((note, idx) => (
-              note.noteOffsetFromC36 === 14 && (
-                <rect
-                  key={`ledger-middle-${idx}`}
-                  x={note.noteX - 20}
-                  y={staffTopLineOffset + 5 * staffLineSpace}
-                  width="40"
-                  height={lineHeight}
-                  fill={drawColor}
-                />
-              )
+            {noteData.map((notesAtBeat, beatIdx) => (
+              notesAtBeat.map((note, noteIdx) => (
+                note.noteOffsetFromC36 === 14 && (
+                  <rect
+                    key={`ledger-middle-${beatIdx}-${noteIdx}`}
+                    x={note.noteX - 20}
+                    y={staffTopLineOffset + 5 * staffLineSpace}
+                    width="40"
+                    height={lineHeight}
+                    fill={drawColor}
+                  />
+                )
+              ))
             ))}
 
             {/* staff lines, bass half */}
@@ -406,50 +459,54 @@
             </g>
 
             {/* Lower ledger lines for all notes */}
-            {noteData.map((note, idx) => (
-              <React.Fragment key={`lower-ledgers-${idx}`}>
-                {note.noteOffsetFromC36 < 3 && (
-                  <rect
-                    x={note.noteX - 20}
-                    y={staffTopLineOffset + 11 * staffLineSpace}
-                    width="40"
-                    height={lineHeight}
-                    fill={drawColor}
-                  />
-                )}
-                {note.noteOffsetFromC36 < 1 && (
-                  <rect
-                    x={note.noteX - 20}
-                    y={staffTopLineOffset + 12 * staffLineSpace}
-                    width="40"
-                    height={lineHeight}
-                    fill={drawColor}
-                  />
-                )}
-              </React.Fragment>
+            {noteData.map((notesAtBeat, beatIdx) => (
+              notesAtBeat.map((note, noteIdx) => (
+                <React.Fragment key={`lower-ledgers-${beatIdx}-${noteIdx}`}>
+                  {note.noteOffsetFromC36 < 3 && (
+                    <rect
+                      x={note.noteX - 20}
+                      y={staffTopLineOffset + 11 * staffLineSpace}
+                      width="40"
+                      height={lineHeight}
+                      fill={drawColor}
+                    />
+                  )}
+                  {note.noteOffsetFromC36 < 1 && (
+                    <rect
+                      x={note.noteX - 20}
+                      y={staffTopLineOffset + 12 * staffLineSpace}
+                      width="40"
+                      height={lineHeight}
+                      fill={drawColor}
+                    />
+                  )}
+                </React.Fragment>
+              ))
             ))}
 
             {/* Render all notes with accidentals and note heads */}
-            {noteData.map((note, idx) => (
-              <g key={`note-${idx}`}>
-                {/* accidental for note head (may be empty string) */}
-                <text
-                  x={note.noteX - 45}
-                  y={note.noteCY + note.noteAccidentalExtraOffset}
-                  fill={drawColor}
-                  fontSize="2em"
-                >
-                  {note.noteAccidental}
-                </text>
-                {/* note head */}
-                <circle
-                  cx={note.noteX}
-                  cy={note.noteCY}
-                  r="10"
-                  stroke={drawColor}
-                  fill={drawColor}
-                />
-              </g>
+            {noteData.map((notesAtBeat, beatIdx) => (
+              notesAtBeat.map((note, noteIdx) => (
+                <g key={`note-${beatIdx}-${noteIdx}`}>
+                  {/* accidental for note head (may be empty string) */}
+                  <text
+                    x={note.noteX - 45}
+                    y={note.noteCY + note.noteAccidentalExtraOffset}
+                    fill={note.noteColor}
+                    fontSize="2em"
+                  >
+                    {note.noteAccidental}
+                  </text>
+                  {/* note head */}
+                  <circle
+                    cx={note.noteX}
+                    cy={note.noteCY}
+                    r="10"
+                    stroke={note.noteColor}
+                    fill={note.noteColor}
+                  />
+                </g>
+              ))
             ))}
 
             {/* Key signature */}
@@ -496,6 +553,18 @@
             interval beyond those listed effectively has weight 0. If you
             configure things weirdly, such that it can not choose a next note,
             it will fall back to playing the configured tonic note.
+          </p>
+          <p>
+            You can configure multiple voices to display and play simultaneous
+            notes on the staff. Set the "Number of Voices" to specify how many
+            notes appear at each beat. Each voice independently chooses notes
+            based on the weights, and notes for different voices are displayed
+            vertically stacked at the same horizontal position. You can assign
+            different instruments (sine, square, sawtooth, triangle) to each
+            voice, and different colors for visual distinction. If you have more
+            voices than instruments or colors configured, the last item in each
+            list will be used for all remaining voices. Use "default" as a color
+            to use the standard color based on your light/dark theme preference.
           </p>
           <p>
             Each of these tools has a configuration import/export feature to

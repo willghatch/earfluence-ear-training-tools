@@ -108,6 +108,13 @@ const inputSchema = {
         },
         {
           "type": "int",
+          "id": "numVoices",
+          "label": "Number of Voices:",
+          "min": 1,
+          "default": 1
+        },
+        {
+          "type": "int",
           "id": "sequenceLength",
           "label": "Sequence Length:",
           "min": 1,
@@ -118,6 +125,52 @@ const inputSchema = {
           "id": "extraRests",
           "label": "Extra Rests (beats):",
           "default": 1
+        }
+      ]
+    },
+    {
+      "title": "Instruments",
+      "cssClass": "config-section",
+      "controls": [
+        {
+          "type": "dynamicList",
+          "id": "instruments",
+          "label": "Instrument per Voice:",
+          "itemType": {
+            "type": "radio",
+            "options": [
+              { "value": "default"},
+              { "value": "sine"},
+              { "value": "square"},
+              { "value": "sawtooth"},
+              { "value": "triangle"}
+            ],
+            "default": "default"
+          },
+          "default": ["default"],
+          "minLength": 1,
+          "removeType": "eachAndLast",
+          "addButtonLabel": "+ Add Instrument"
+        }
+      ]
+    },
+    {
+      "title": "Note Colors",
+      "cssClass": "config-section",
+      "controls": [
+        {
+          "type": "dynamicList",
+          "id": "noteColors",
+          "label": "Note Color per Voice:",
+          "itemType": {
+            "type": "text",
+            "placeholder": "Color (hex or name)",
+            "default": "default"
+          },
+          "default": ["default"],
+          "minLength": 1,
+          "removeType": "eachAndLast",
+          "addButtonLabel": "+ Add Color"
         }
       ]
     }

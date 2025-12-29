@@ -30,18 +30,34 @@
       let playingGlobal = false;
 
       function play() {
-        const synth = new Tone.Synth({
-          envelope: {
-            attack: 0.05,
-            decay: 0.2,
-            sustain: 0.8,
-            // Want fast release, the note bleeds too far into the space at higher speeds.
-            release: 0.05,
-          },
-        }).toDestination();
-        Tone.Transport.bpm.value = getCurrentConfig().tempo;
+        const config = getCurrentConfig();
+        const instruments = config.instruments || ["default"];
+        const numVoices = config.numVoices || 1;
+
+        // Create a synth for each voice with the corresponding instrument
+        const synths = [];
+        for (let i = 0; i < numVoices; i++) {
+          const instrumentType = i < instruments.length ? instruments[i] : instruments[instruments.length - 1];
+          const synthOptions = {
+            envelope: {
+              attack: 0.05,
+              decay: 0.2,
+              sustain: 0.8,
+              // Want fast release, the note bleeds too far into the space at higher speeds.
+              release: 0.05,
+            },
+          };
+          // Only add oscillator type if not using default
+          if (instrumentType !== "default") {
+            synthOptions.oscillator = { type: instrumentType };
+          }
+          const synth = new Tone.Synth(synthOptions).toDestination();
+          synths.push(synth);
+        }
+
+        Tone.Transport.bpm.value = config.tempo;
         playingGlobal = true;
-        startPlaying(synth, getPlaying, undefined);
+        startPlaying(synths, getPlaying, undefined);
       }
       function stop() {
         playingGlobal = false;
@@ -57,7 +73,7 @@
         return playingGlobal;
       }
 
-      function startPlaying(synth, getPlaying, lastChoice) {
+      function startPlaying(synths, getPlaying, lastChoice) {
         // Play a sequence of notes at the current BPM, then set a timeout with
         // a continuation to run if playing is still true.
         function mkCont(lastChoice) {
@@ -68,20 +84,26 @@
               const extraRests = config.extraRests || 0;
               const duration = bpmSeconds(config.tempo);
               const beatMs = bpmMilliseconds(config.tempo);
+              const numVoices = config.numVoices || 1;
 
-              // Generate sequence of notes
+              // Generate sequence of notes for each voice
               const sequence = [];
               let currentChoice = lastChoice;
               for (let i = 0; i < sequenceLength; i++) {
-                currentChoice = makeChoice(currentChoice, config);
+                currentChoice = makeChoices(currentChoice, config);
                 sequence.push(currentChoice);
               }
               console.log("playing sequence: ", sequence);
 
-              // Play each note in the sequence
-              sequence.forEach((note, index) => {
+              // Play each set of simultaneous notes (all voices at each beat) in the sequence
+              sequence.forEach((notes, index) => {
                 setTimeout(() => {
-                  synth.triggerAttackRelease(midiTone(note || 60), duration);
+                  // Play each voice with its corresponding synth
+                  notes.forEach((note, voiceIdx) => {
+                    if (voiceIdx < synths.length) {
+                      synths[voiceIdx].triggerAttackRelease(midiTone(note || 60), duration);
+                    }
+                  });
                 }, index * beatMs);
               });
 
@@ -167,9 +189,17 @@
             it will fall back to playing the configured tonic note.
           </p>
           <p>
+            You can configure multiple voices to play simultaneous notes. Set
+            the "Number of Voices" to specify how many notes play at once. Each
+            voice independently chooses notes based on the weights. You can also
+            assign different instruments (sine, square, sawtooth, triangle) to
+            each voice. If you have more voices than instruments configured, the
+            last instrument in the list will be used for all remaining voices.
+          </p>
+          <p>
             Another exercise that can help improve melodic fluency is using the
             <a href="chord-match.html"> Chord Match</a> tool with arpeggiation
-            settings to create a “chunking” mode, in which musical phrases are
+            settings to create a "chunking" mode, in which musical phrases are
             played, recognized, and repeated as a unit.
           </p>
           <p>
