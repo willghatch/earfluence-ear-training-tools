@@ -37,7 +37,10 @@
         // Create a synth for each voice with the corresponding instrument
         const synths = [];
         for (let i = 0; i < numVoices; i++) {
-          const instrumentType = i < instruments.length ? instruments[i] : instruments[instruments.length - 1];
+          const instrumentType =
+            i < instruments.length
+              ? instruments[i]
+              : instruments[instruments.length - 1];
           const synthOptions = {
             envelope: {
               attack: 0.05,
@@ -101,7 +104,10 @@
                   // Play each voice with its corresponding synth
                   notes.forEach((note, voiceIdx) => {
                     if (voiceIdx < synths.length) {
-                      synths[voiceIdx].triggerAttackRelease(midiTone(note || 60), duration);
+                      synths[voiceIdx].triggerAttackRelease(
+                        midiTone(note || 60),
+                        duration,
+                      );
                     }
                   });
                 }, index * beatMs);
@@ -240,7 +246,7 @@
         <!-- Configuration form will be generated here -->
       </div>
       <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener("DOMContentLoaded", () => {
           initializeConfigEditor();
         });
       </script>

@@ -45,7 +45,10 @@
         if (instrument !== "default") {
           synthOptions.oscillator = { type: instrument };
         }
-        const synth = new Tone.PolySynth(Tone.Synth, synthOptions).toDestination();
+        const synth = new Tone.PolySynth(
+          Tone.Synth,
+          synthOptions,
+        ).toDestination();
         Tone.Transport.bpm.value = config.tempo;
         playingGlobal = true;
         startPlaying(synth, getPlaying, undefined);
@@ -90,8 +93,7 @@
 
                 if (config.arpeggiate) {
                   // Play notes one at a time (but likely with overlap)
-                  const arpeggiationDelay =
-                    config.arpeggiationSpeed * beatMs;
+                  const arpeggiationDelay = config.arpeggiationSpeed * beatMs;
 
                   let notesToPlay = [...choice];
                   if (config.arpeggioDirection === "backward") {
@@ -104,13 +106,16 @@
                   }
 
                   notesToPlay.forEach((note, index) => {
-                    setTimeout(() => {
-                      synth.triggerAttackRelease(
-                        midiTone(note),
-                        noteDuration,
-                        Tone.now(),
-                      );
-                    }, chordStartTime + index * arpeggiationDelay);
+                    setTimeout(
+                      () => {
+                        synth.triggerAttackRelease(
+                          midiTone(note),
+                          noteDuration,
+                          Tone.now(),
+                        );
+                      },
+                      chordStartTime + index * arpeggiationDelay,
+                    );
                   });
                 } else {
                   // Play all notes together
@@ -243,7 +248,8 @@
           </p>
           <h3>Changelog</h3>
           <p>
-            <strong>2025-12-29:</strong> Replaced sequenceLength parameter with extraRests. Added instrument choice to select different timbres.
+            <strong>2025-12-29:</strong> Replaced sequenceLength parameter with
+            extraRests. Added instrument choice to select different timbres.
           </p>
         </div>
       </div>
@@ -254,7 +260,7 @@
         <!-- Configuration form will be generated here -->
       </div>
       <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener("DOMContentLoaded", () => {
           initializeConfigEditor();
         });
       </script>

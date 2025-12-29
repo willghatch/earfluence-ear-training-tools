@@ -1,225 +1,238 @@
 const inputSchema = {
-  "title": "Chord Match Configuration",
-  "sections": [
+  title: "Chord Match Configuration",
+  sections: [
     {
-      "title": "Import/Export Configuration",
-      "cssClass": "config-section",
-      "controls": [
+      title: "Import/Export Configuration",
+      cssClass: "config-section",
+      controls: [
         {
-          "type": "import-export"
-        }
-      ]
+          type: "import-export",
+        },
+      ],
     },
     {
-      "title": "Chord Configurations",
-      "cssClass": "config-section",
-      "controls": [
+      title: "Chord Configurations",
+      cssClass: "config-section",
+      controls: [
         {
-          "type": "preset-selector",
-          "targetField": "chords",
-          "presetSource": "chordPresets"
+          type: "preset-selector",
+          targetField: "chords",
+          presetSource: "chordPresets",
         },
         {
-          "type": "dynamicList",
-          "id": "chords",
-          "itemType": {
-            "type": "struct",
-            "cssClass": "chord-config",
-            "fields": [
+          type: "dynamicList",
+          id: "chords",
+          itemType: {
+            type: "struct",
+            cssClass: "chord-config",
+            fields: [
               {
-                "type": "text",
-                "id": "name",
-                "label": "Name:",
-                "default": ""
+                type: "text",
+                id: "name",
+                label: "Name:",
+                default: "",
               },
               {
-                "type": "json",
-                "id": "offsets",
-                "label": "Offsets:",
-                "default": [0]
+                type: "json",
+                id: "offsets",
+                label: "Offsets:",
+                default: [0],
               },
               {
-                "type": "label",
-                "text": "Weights for bass note:"
+                type: "label",
+                text: "Weights for bass note:",
               },
               {
-                "type": "fixedList",
-                "id": "weights",
-                "itemType": {
-                  "type": "number",
-                  "min": 0
+                type: "fixedList",
+                id: "weights",
+                itemType: {
+                  type: "number",
+                  min: 0,
                 },
-                "labels": ["do", "ra", "re", "me", "mi", "fa", "fi", "so", "le", "la", "te", "ti"],
-                "default": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                "cssClass": "weights-grid"
-              }
-            ]
+                labels: [
+                  "do",
+                  "ra",
+                  "re",
+                  "me",
+                  "mi",
+                  "fa",
+                  "fi",
+                  "so",
+                  "le",
+                  "la",
+                  "te",
+                  "ti",
+                ],
+                default: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                cssClass: "weights-grid",
+              },
+            ],
           },
-          "addButtonLabel": "+ Add Chord",
-          "default": [
+          addButtonLabel: "+ Add Chord",
+          default: [
             {
-              "name": "Major",
-              "offsets": [0, 4, 7],
-              "weights": [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0]
+              name: "Major",
+              offsets: [0, 4, 7],
+              weights: [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0],
             },
             {
-              "name": "minor",
-              "offsets": [0, 3, 7],
-              "weights": [0, 0, 10, 0, 10, 0, 0, 0, 0, 10, 0, 0]
+              name: "minor",
+              offsets: [0, 3, 7],
+              weights: [0, 0, 10, 0, 10, 0, 0, 0, 0, 10, 0, 0],
             },
             {
-              "name": "diminished",
-              "offsets": [0, 3, 6],
-              "weights": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10]
-            }
-          ]
-        }
-      ]
+              name: "diminished",
+              offsets: [0, 3, 6],
+              weights: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10],
+            },
+          ],
+        },
+      ],
     },
     {
-      "title": "Playback Settings",
-      "cssClass": "config-section",
-      "controls": [
+      title: "Playback Settings",
+      cssClass: "config-section",
+      controls: [
         {
-          "type": "checkbox",
-          "id": "arpeggiate",
-          "label": "Arpeggiate Chords",
-          "default": false
+          type: "checkbox",
+          id: "arpeggiate",
+          label: "Arpeggiate Chords",
+          default: false,
         },
         {
-          "type": "radio",
-          "id": "arpeggioDirection",
-          "label": "Arpeggio Direction:",
-          "options": [
-            { "value": "forward"},
-            { "value": "backward"},
-            { "value": "both"}
+          type: "radio",
+          id: "arpeggioDirection",
+          label: "Arpeggio Direction:",
+          options: [
+            { value: "forward" },
+            { value: "backward" },
+            { value: "both" },
           ],
-          "default": "forward"
+          default: "forward",
         },
         {
-          "type": "number",
-          "id": "arpeggiationSpeed",
-          "label": "Arpeggiation Speed (beats):",
-          "min": 0.05,
-          "step": 0.05,
-          "default": 0.1
+          type: "number",
+          id: "arpeggiationSpeed",
+          label: "Arpeggiation Speed (beats):",
+          min: 0.05,
+          step: 0.05,
+          default: 0.1,
         },
         {
-          "type": "number",
-          "id": "noteDuration",
-          "label": "Note Duration (beats):",
-          "min": 0.1,
-          "step": 0.5,
-          "default": 1
+          type: "number",
+          id: "noteDuration",
+          label: "Note Duration (beats):",
+          min: 0.1,
+          step: 0.5,
+          default: 1,
         },
         {
-          "type": "int",
-          "id": "sequenceLength",
-          "label": "Sequence Length:",
-          "min": 1,
-          "default": 1
+          type: "int",
+          id: "sequenceLength",
+          label: "Sequence Length:",
+          min: 1,
+          default: 1,
         },
         {
-          "type": "number",
-          "id": "extraRests",
-          "label": "Extra Rests (beats):",
-          "default": 0
+          type: "number",
+          id: "extraRests",
+          label: "Extra Rests (beats):",
+          default: 0,
         },
         {
-          "type": "int",
-          "id": "lowPitch",
-          "label": "Low Pitch (MIDI):",
-          "min": 0,
-          "max": 127,
-          "default": 50
+          type: "int",
+          id: "lowPitch",
+          label: "Low Pitch (MIDI):",
+          min: 0,
+          max: 127,
+          default: 50,
         },
         {
-          "type": "int",
-          "id": "highPitch",
-          "label": "High Pitch (MIDI):",
-          "min": 0,
-          "max": 127,
-          "default": 75
+          type: "int",
+          id: "highPitch",
+          label: "High Pitch (MIDI):",
+          min: 0,
+          max: 127,
+          default: 75,
         },
         {
-          "type": "int",
-          "id": "tonic",
-          "label": "Tonic (MIDI):",
-          "min": 0,
-          "max": 127,
-          "default": 60,
-          "displayFunction": "noteName",
-          "displayId": "tonicName",
-          "actions": [
+          type: "int",
+          id: "tonic",
+          label: "Tonic (MIDI):",
+          min: 0,
+          max: 127,
+          default: 60,
+          displayFunction: "noteName",
+          displayId: "tonicName",
+          actions: [
             {
-              "label": "Random",
-              "functionName": "randomTonic"
-            }
-          ]
-        },
-        {
-          "type": "int",
-          "id": "tempo",
-          "label": "Tempo (BPM):",
-          "min": 1,
-          "default": 80
-        },
-        {
-          "type": "radio",
-          "id": "instrument",
-          "label": "Instrument:",
-          "options": [
-            { "value": "default"},
-            { "value": "sine"},
-            { "value": "square"},
-            { "value": "sawtooth"},
-            { "value": "triangle"}
+              label: "Random",
+              functionName: "randomTonic",
+            },
           ],
-          "default": "default"
-        }
-      ]
-    }
+        },
+        {
+          type: "int",
+          id: "tempo",
+          label: "Tempo (BPM):",
+          min: 1,
+          default: 80,
+        },
+        {
+          type: "radio",
+          id: "instrument",
+          label: "Instrument:",
+          options: [
+            { value: "default" },
+            { value: "sine" },
+            { value: "square" },
+            { value: "sawtooth" },
+            { value: "triangle" },
+          ],
+          default: "default",
+        },
+      ],
+    },
   ],
-  "presets": {
-    "chordPresets": {
+  presets: {
+    chordPresets: {
       "no change": [],
       "Major Scale Triads": [
         {
-          "name": "Major",
-          "offsets": [0, 4, 7],
-          "weights": [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0]
+          name: "Major",
+          offsets: [0, 4, 7],
+          weights: [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0],
         },
         {
-          "name": "minor",
-          "offsets": [0, 3, 7],
-          "weights": [0, 0, 10, 0, 10, 0, 0, 0, 0, 10, 0, 0]
+          name: "minor",
+          offsets: [0, 3, 7],
+          weights: [0, 0, 10, 0, 10, 0, 0, 0, 0, 10, 0, 0],
         },
         {
-          "name": "diminished",
-          "offsets": [0, 3, 6],
-          "weights": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10]
-        }
+          name: "diminished",
+          offsets: [0, 3, 6],
+          weights: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10],
+        },
       ],
       "minor Scale Triads": [
         {
-          "name": "Major",
-          "offsets": [0, 4, 7],
-          "weights": [0, 0, 0, 10, 0, 0, 0, 0, 10, 0, 10, 0]
+          name: "Major",
+          offsets: [0, 4, 7],
+          weights: [0, 0, 0, 10, 0, 0, 0, 0, 10, 0, 10, 0],
         },
         {
-          "name": "minor",
-          "offsets": [0, 3, 7],
-          "weights": [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0]
+          name: "minor",
+          offsets: [0, 3, 7],
+          weights: [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0],
         },
         {
-          "name": "diminished",
-          "offsets": [0, 3, 6],
-          "weights": [0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        }
-      ]
-    }
-  }
+          name: "diminished",
+          offsets: [0, 3, 6],
+          weights: [0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        },
+      ],
+    },
+  },
 };
 
 let formAPI;
@@ -231,11 +244,11 @@ function randomTonic() {
 
 // Initialize the config editor
 function initializeConfigEditor() {
-  formAPI = inputCreate(inputSchema, '#config-container', {
+  formAPI = inputCreate(inputSchema, "#config-container", {
     functions: {
       noteName: noteName,
-      randomTonic: randomTonic
-    }
+      randomTonic: randomTonic,
+    },
   });
 }
 

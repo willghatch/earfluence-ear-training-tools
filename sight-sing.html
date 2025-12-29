@@ -48,7 +48,8 @@
             const config = getCurrentConfig();
             if (getPlaying()) {
               const sequenceLength = config.sequenceLength || 1;
-              const extraRests = config.extraRests !== undefined ? config.extraRests : 1;
+              const extraRests =
+                config.extraRests !== undefined ? config.extraRests : 1;
               const duration = bpmSeconds(config.tempo);
               const beatMs = bpmMilliseconds(config.tempo);
               const numVoices = config.numVoices || 1;
@@ -71,18 +72,21 @@
               const delayBeforePlay = Math.max(0, sequenceLength + extraRests);
 
               sequence.forEach((notes, index) => {
-                setTimeout(() => {
-                  // Play each voice with its corresponding synth
-                  notes.forEach((note, voiceIdx) => {
-                    if (voiceIdx < synths.length) {
-                      synths[voiceIdx].triggerAttackRelease(
-                        midiTone(note || 60),
-                        duration,
-                        Tone.now()
-                      );
-                    }
-                  });
-                }, (delayBeforePlay + index) * beatMs);
+                setTimeout(
+                  () => {
+                    // Play each voice with its corresponding synth
+                    notes.forEach((note, voiceIdx) => {
+                      if (voiceIdx < synths.length) {
+                        synths[voiceIdx].triggerAttackRelease(
+                          midiTone(note || 60),
+                          duration,
+                          Tone.now(),
+                        );
+                      }
+                    });
+                  },
+                  (delayBeforePlay + index) * beatMs,
+                );
               });
 
               // Schedule next sequence after showing + playing
@@ -121,7 +125,10 @@
           // Create a synth for each voice with the corresponding instrument
           const synths = [];
           for (let i = 0; i < numVoices; i++) {
-            const instrumentType = i < instruments.length ? instruments[i] : instruments[instruments.length - 1];
+            const instrumentType =
+              i < instruments.length
+                ? instruments[i]
+                : instruments[instruments.length - 1];
             const synthOptions = {
               envelope: {
                 attack: 0.05,
@@ -178,14 +185,18 @@
             noteSequence = note;
           } else {
             // Old single-voice format: array of notes
-            noteSequence = note.map(n => [n]);
+            noteSequence = note.map((n) => [n]);
           }
         } else {
           // Single note
           noteSequence = [[note]];
         }
         console.log("StaffDisplay: ", noteSequence);
-        noteSequence.forEach(notes => notes.forEach(n => console.log("playing: ", Tone.Frequency(n, "midi").toNote())));
+        noteSequence.forEach((notes) =>
+          notes.forEach((n) =>
+            console.log("playing: ", Tone.Frequency(n, "midi").toNote()),
+          ),
+        );
         const staffTopLineOffset = 100;
         const staffLineSpace = 20;
         const lineHeight = 2;
@@ -201,7 +212,8 @@
         const noteSpacing = 80; // Horizontal space between notes
         const firstNoteX = 250; // X position of first note
         const staffBaseWidth = 290; // Original staff width
-        const staffWidth = staffBaseWidth + (noteSequence.length - 1) * noteSpacing; // Extended width
+        const staffWidth =
+          staffBaseWidth + (noteSequence.length - 1) * noteSpacing; // Extended width
 
         const offsetFromC36 = (note) => {
           const noteOffsetFromTonic = (note - (config.tonic % 12)) % 12;
@@ -211,8 +223,9 @@
           const tonicStaffOffset = tonicStaffOffsets[tonicFromC];
           const noteStaffBase = tonicStaffBaseArray[noteOffsetFromTonic];
           const noteOctave = Math.floor(note / 12);
-          const useOctave = noteOctave - ((noteFromC < tonicFromC) ? 1 : 0);
-          const offsetFromLowestC = (useOctave - 3) * 7 + noteStaffBase + tonicStaffOffset;
+          const useOctave = noteOctave - (noteFromC < tonicFromC ? 1 : 0);
+          const offsetFromLowestC =
+            (useOctave - 3) * 7 + noteStaffBase + tonicStaffOffset;
           return offsetFromLowestC;
         };
         const topDistanceFromBottom = 29; // number of positions from 2 ledger lines below to 2 above.
@@ -322,21 +335,28 @@
             const noteOffsetFromC36 = offsetFromC36(noteUse);
             const noteCY = offsetFromTop(noteOffsetFromC36);
             const noteOffsetFromTonic = (noteUse - (config.tonic % 12)) % 12;
-            const noteAccidentalDirection = noteAccidentalArrayNumeric[noteOffsetFromTonic];
+            const noteAccidentalDirection =
+              noteAccidentalArrayNumeric[noteOffsetFromTonic];
             const hasAccidental = noteAccidentalDirection !== 0;
-            const noteAccidentalModified = getAccidentalValueModifiedByKeySignature(
-              noteOffsetFromC36,
-              noteAccidentalDirection,
-            );
+            const noteAccidentalModified =
+              getAccidentalValueModifiedByKeySignature(
+                noteOffsetFromC36,
+                noteAccidentalDirection,
+              );
             const accidentalSigns = ["♭♭", "♭", "♮", "♯", "♯♯"];
             const noteAccidental = hasAccidental
               ? accidentalSigns[noteAccidentalModified + 2]
               : "";
-            const noteAccidentalExtraOffset = noteAccidentalExtraOffsets[noteAccidental] || 0;
+            const noteAccidentalExtraOffset =
+              noteAccidentalExtraOffsets[noteAccidental] || 0;
 
             // Get color for this voice
-            const colorConfig = voiceIdx < noteColors.length ? noteColors[voiceIdx] : noteColors[noteColors.length - 1];
-            const noteColor = colorConfig === "default" ? drawColor : colorConfig;
+            const colorConfig =
+              voiceIdx < noteColors.length
+                ? noteColors[voiceIdx]
+                : noteColors[noteColors.length - 1];
+            const noteColor =
+              colorConfig === "default" ? drawColor : colorConfig;
 
             return {
               noteUse,
@@ -358,7 +378,7 @@
             xmlns="http://www.w3.org/2000/svg"
           >
             {/* Upper ledger lines for all notes */}
-            {noteData.map((notesAtBeat, beatIdx) => (
+            {noteData.map((notesAtBeat, beatIdx) =>
               notesAtBeat.map((note, noteIdx) => (
                 <React.Fragment key={`upper-ledgers-${beatIdx}-${noteIdx}`}>
                   {note.noteOffsetFromC36 >= 28 && (
@@ -380,8 +400,8 @@
                     />
                   )}
                 </React.Fragment>
-              ))
-            ))}
+              )),
+            )}
 
             {/* staff lines, treble half */}
             {[...Array(5).keys()].map((_, i) => (
@@ -411,20 +431,21 @@
             </g>
 
             {/* Middle ledger line for all notes */}
-            {noteData.map((notesAtBeat, beatIdx) => (
-              notesAtBeat.map((note, noteIdx) => (
-                note.noteOffsetFromC36 === 14 && (
-                  <rect
-                    key={`ledger-middle-${beatIdx}-${noteIdx}`}
-                    x={note.noteX - 20}
-                    y={staffTopLineOffset + 5 * staffLineSpace}
-                    width="40"
-                    height={lineHeight}
-                    fill={drawColor}
-                  />
-                )
-              ))
-            ))}
+            {noteData.map((notesAtBeat, beatIdx) =>
+              notesAtBeat.map(
+                (note, noteIdx) =>
+                  note.noteOffsetFromC36 === 14 && (
+                    <rect
+                      key={`ledger-middle-${beatIdx}-${noteIdx}`}
+                      x={note.noteX - 20}
+                      y={staffTopLineOffset + 5 * staffLineSpace}
+                      width="40"
+                      height={lineHeight}
+                      fill={drawColor}
+                    />
+                  ),
+              ),
+            )}
 
             {/* staff lines, bass half */}
             {[...Array(5).keys()].map((_, i) => (
@@ -459,7 +480,7 @@
             </g>
 
             {/* Lower ledger lines for all notes */}
-            {noteData.map((notesAtBeat, beatIdx) => (
+            {noteData.map((notesAtBeat, beatIdx) =>
               notesAtBeat.map((note, noteIdx) => (
                 <React.Fragment key={`lower-ledgers-${beatIdx}-${noteIdx}`}>
                   {note.noteOffsetFromC36 < 3 && (
@@ -481,11 +502,11 @@
                     />
                   )}
                 </React.Fragment>
-              ))
-            ))}
+              )),
+            )}
 
             {/* Render all notes with accidentals and note heads */}
-            {noteData.map((notesAtBeat, beatIdx) => (
+            {noteData.map((notesAtBeat, beatIdx) =>
               notesAtBeat.map((note, noteIdx) => (
                 <g key={`note-${beatIdx}-${noteIdx}`}>
                   {/* accidental for note head (may be empty string) */}
@@ -506,8 +527,8 @@
                     fill={note.noteColor}
                   />
                 </g>
-              ))
-            ))}
+              )),
+            )}
 
             {/* Key signature */}
             {getKeySignatureElements()}
@@ -593,8 +614,8 @@
             <strong>2025-12-29:</strong> Added sequence length configuration to
             display and play multiple notes in a row. Added support for multiple
             voices to display and play simultaneous notes. Added instrument
-            choice to select different timbres for each voice.
-            Added color choice to distinguish different voices visually on the staff.
+            choice to select different timbres for each voice. Added color
+            choice to distinguish different voices visually on the staff.
           </p>
         </div>
       </div>
@@ -605,7 +626,7 @@
         <!-- Configuration form will be generated here -->
       </div>
       <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener("DOMContentLoaded", () => {
           initializeConfigEditor();
         });
       </script>
