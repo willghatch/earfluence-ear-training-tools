@@ -123,7 +123,7 @@ const inputSchema = {
         {
           "type": "number",
           "id": "extraRests",
-          "label": "Extra Rests (in noteDuration units):",
+          "label": "Extra Rests (beats):",
           "default": 0
         },
         {

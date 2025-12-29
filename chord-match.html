@@ -86,7 +86,7 @@
 
               // Play each chord in the sequence
               sequence.forEach((choice, chordIndex) => {
-                const chordStartTime = chordIndex * noteDurationBeats * beatMs;
+                const chordStartTime = chordIndex * beatMs;
 
                 if (config.arpeggiate) {
                   // Play notes one at a time (but likely with overlap)
@@ -120,8 +120,9 @@
                 }
               });
 
-              // Calculate rest time: (sequenceLength + extraRests) * noteDuration beats (minimum 0)
-              const restBeats = Math.max(0, sequenceLength + extraRests) * noteDurationBeats;
+              // Calculate rest time in beats
+              // Rest is always: sequence duration + extraRests beats
+              const restBeats = Math.max(0, sequenceLength + extraRests);
               const totalBeats = sequenceLength * noteDurationBeats + restBeats;
 
               // Schedule next sequence
