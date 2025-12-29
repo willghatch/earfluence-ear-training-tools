@@ -42,24 +42,46 @@
       };
 
       function startPlayLoop(synth, getPlaying, setLastChoice) {
-        // Play a note at the current BPM, then set a timeout for two beats later with
-        // a continuation to run if playing is still true.
+        // Play a sequence of notes with sight-singing timing
         function mkCont(lastChoice) {
           return () => {
             const config = getCurrentConfig();
             if (getPlaying()) {
-              const choice = makeChoice(lastChoice, config);
-              console.log("playing choice: ", choice);
-              setLastChoice(choice);
-              //const duration = "8n."; // 4n feels too long, but 8n feels too short.
+              const sequenceLength = config.sequenceLength || 1;
+              const extraRests = config.extraRests !== undefined ? config.extraRests : 1;
               const duration = bpmSeconds(config.tempo);
-              Tone.Transport.bpm.value = getCurrentConfig().tempo;
-              synth.triggerAttackRelease(
-                midiTone(choice || 60),
-                duration,
-                Tone.now() + 2 * bpmSeconds(config.tempo),
-              );
-              setTimeout(mkCont(choice), 3 * bpmMilliseconds(config.tempo));
+              const beatMs = bpmMilliseconds(config.tempo);
+
+              // Generate sequence of notes
+              const sequence = [];
+              let currentChoice = lastChoice;
+              for (let i = 0; i < sequenceLength; i++) {
+                currentChoice = makeChoice(currentChoice, config);
+                sequence.push(currentChoice);
+              }
+              console.log("playing sequence: ", sequence);
+
+              // Display all notes immediately
+              setLastChoice(sequence);
+
+              Tone.Transport.bpm.value = config.tempo;
+
+              // Wait (sequenceLength + extraRests) beats, then play each note
+              const delayBeforePlay = Math.max(0, sequenceLength + extraRests);
+
+              sequence.forEach((note, index) => {
+                setTimeout(() => {
+                  synth.triggerAttackRelease(
+                    midiTone(note || 60),
+                    duration,
+                    Tone.now()
+                  );
+                }, (delayBeforePlay + index) * beatMs);
+              });
+
+              // Schedule next sequence after showing + playing
+              const totalBeats = delayBeforePlay + sequenceLength;
+              setTimeout(mkCont(currentChoice), totalBeats * beatMs);
             }
           };
         }
@@ -121,9 +143,10 @@
 
       function StaffDisplay({ config, note }) {
         // There is no software engineering here, only gross hacking until it works...
-        const noteUse = note || config.tonic;
-        console.log("StaffDisplay: ", noteUse);
-        console.log("playing: ", Tone.Frequency(noteUse, "midi").toNote());
+        // Handle both single note and array of notes
+        const noteSequence = Array.isArray(note) ? note : (note ? [note] : [config.tonic]);
+        console.log("StaffDisplay: ", noteSequence);
+        noteSequence.forEach(n => console.log("playing: ", Tone.Frequency(n, "midi").toNote()));
         const staffTopLineOffset = 100;
         const staffLineSpace = 20;
         const lineHeight = 2;
@@ -134,6 +157,13 @@
         const keySigNum = keySigNumArray[config.tonic % 12];
         const tonicSemisOffsetFromBottomLineNatural =
           config.tonic - bottomLineNote;
+
+        // Note spacing configuration
+        const noteSpacing = 80; // Horizontal space between notes
+        const firstNoteX = 250; // X position of first note
+        const staffBaseWidth = 400; // Original staff width
+        const staffWidth = staffBaseWidth + (noteSequence.length - 1) * noteSpacing; // Extended width
+
         const offsetFromC36 = (note) => {
           const noteOffsetFromTonic = (note - (config.tonic % 12)) % 12;
           const withinOctaveOffset = tonicStaffBaseArray[noteOffsetFromTonic];
@@ -156,9 +186,7 @@
               staffLineSpace
           );
         };
-        const noteOffsetFromC36 = offsetFromC36(noteUse);
-        const noteCY = offsetFromTop(noteOffsetFromC36);
-        const noteOffsetFromTonic = (noteUse - (config.tonic % 12)) % 12;
+
         const numSignatureMods = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5][
           config.tonic % 12
         ];
@@ -166,14 +194,6 @@
         const noteAccidentalArrayNumeric = [
           0, -1, 0, -1, 0, 0, 1, 0, -1, 0, -1, 0,
         ];
-        const noteAccidentalDirection =
-          noteAccidentalArrayNumeric[noteOffsetFromTonic];
-        const hasAccidental = noteAccidentalDirection !== 0;
-        // TODO - choose accidental based on numSignatureMods and
-        // noteOffsetFromC36.  The noteOffsetFromC36 determines the line/space for
-        // the note, so we can determine the key signature state of that position,
-        // then based on noteAccidentalDirection we can determine the
-        // accidental.
         const noteAccidentalExtraOffsets = {
           "": 0,
           n: 7,
@@ -253,56 +273,72 @@
           return value;
         };
 
-        // Get the key signature accidental for this note's staffPosition
-        const noteAccidentalModified = getAccidentalValueModifiedByKeySignature(
-          noteOffsetFromC36,
-          noteAccidentalDirection,
-        );
-        const noteAccidental = hasAccidental
-          ? accidentalSigns[noteAccidentalModified + 2]
-          : "";
+        // Process each note in the sequence
+        const noteData = noteSequence.map((noteUse, index) => {
+          const noteX = firstNoteX + index * noteSpacing;
+          const noteOffsetFromC36 = offsetFromC36(noteUse);
+          const noteCY = offsetFromTop(noteOffsetFromC36);
+          const noteOffsetFromTonic = (noteUse - (config.tonic % 12)) % 12;
+          const noteAccidentalDirection = noteAccidentalArrayNumeric[noteOffsetFromTonic];
+          const hasAccidental = noteAccidentalDirection !== 0;
+          const noteAccidentalModified = getAccidentalValueModifiedByKeySignature(
+            noteOffsetFromC36,
+            noteAccidentalDirection,
+          );
+          const accidentalSigns = ["♭♭", "♭", "♮", "♯", "♯♯"];
+          const noteAccidental = hasAccidental
+            ? accidentalSigns[noteAccidentalModified + 2]
+            : "";
+          const noteAccidentalExtraOffset = noteAccidentalExtraOffsets[noteAccidental] || 0;
 
-        const noteAccidentalExtraOffset =
-          noteAccidentalExtraOffsets[noteAccidental] || 0;
+          return {
+            noteUse,
+            noteX,
+            noteOffsetFromC36,
+            noteCY,
+            noteAccidental,
+            noteAccidentalExtraOffset,
+          };
+        });
 
         return (
           <svg
-            width="500"
+            width={Math.max(500, staffWidth + 100)}
             height="500"
             version="1.1"
             xmlns="http://www.w3.org/2000/svg"
           >
-            {/* ledger line */}
-            {noteOffsetFromC36 >= 28
-              ? [
+            {/* Upper ledger lines for all notes */}
+            {noteData.map((note, idx) => (
+              <React.Fragment key={`upper-ledgers-${idx}`}>
+                {note.noteOffsetFromC36 >= 28 && (
                   <rect
-                    x="230"
+                    x={note.noteX - 20}
                     y={staffTopLineOffset - 2 * staffLineSpace}
                     width="40"
                     height={lineHeight}
                     fill={drawColor}
-                  />,
-                ]
-              : []}
-            {/* ledger line */}
-            {noteOffsetFromC36 >= 26
-              ? [
+                  />
+                )}
+                {note.noteOffsetFromC36 >= 26 && (
                   <rect
-                    x="230"
+                    x={note.noteX - 20}
                     y={staffTopLineOffset - 1 * staffLineSpace}
                     width="40"
                     height={lineHeight}
                     fill={drawColor}
-                  />,
-                ]
-              : []}
+                  />
+                )}
+              </React.Fragment>
+            ))}
 
             {/* staff lines, treble half */}
             {[...Array(5).keys()].map((_, i) => (
               <rect
+                key={`treble-line-${i}`}
                 x="0"
                 y={staffTopLineOffset + i * staffLineSpace}
-                width="400"
+                width={staffWidth}
                 height={lineHeight}
                 fill={drawColor}
               />
@@ -323,25 +359,27 @@
               />
             </g>
 
-            {/* ledger line */}
-            {noteOffsetFromC36 == 14
-              ? [
-                  <rect
-                    x="230"
-                    y={staffTopLineOffset + 5 * staffLineSpace}
-                    width="40"
-                    height={lineHeight}
-                    fill={drawColor}
-                  />,
-                ]
-              : []}
+            {/* Middle ledger line for all notes */}
+            {noteData.map((note, idx) => (
+              note.noteOffsetFromC36 === 14 && (
+                <rect
+                  key={`ledger-middle-${idx}`}
+                  x={note.noteX - 20}
+                  y={staffTopLineOffset + 5 * staffLineSpace}
+                  width="40"
+                  height={lineHeight}
+                  fill={drawColor}
+                />
+              )
+            ))}
 
             {/* staff lines, bass half */}
             {[...Array(5).keys()].map((_, i) => (
               <rect
+                key={`bass-line-${i}`}
                 x="0"
                 y={staffTopLineOffset + (i + 6) * staffLineSpace}
-                width="400"
+                width={staffWidth}
                 height={lineHeight}
                 fill={drawColor}
               />
@@ -367,48 +405,52 @@
               </g>
             </g>
 
-            {/* ledger line */}
-            {noteOffsetFromC36 < 3
-              ? [
+            {/* Lower ledger lines for all notes */}
+            {noteData.map((note, idx) => (
+              <React.Fragment key={`lower-ledgers-${idx}`}>
+                {note.noteOffsetFromC36 < 3 && (
                   <rect
-                    x="230"
+                    x={note.noteX - 20}
                     y={staffTopLineOffset + 11 * staffLineSpace}
                     width="40"
                     height={lineHeight}
                     fill={drawColor}
-                  />,
-                ]
-              : []}
-            {/* ledger line */}
-            {noteOffsetFromC36 < 1
-              ? [
+                  />
+                )}
+                {note.noteOffsetFromC36 < 1 && (
                   <rect
-                    x="230"
+                    x={note.noteX - 20}
                     y={staffTopLineOffset + 12 * staffLineSpace}
                     width="40"
                     height={lineHeight}
                     fill={drawColor}
-                  />,
-                ]
-              : []}
+                  />
+                )}
+              </React.Fragment>
+            ))}
 
-            {/* accidental for note head (may be empty string) */}
-            <text
-              x="205"
-              y={noteCY + noteAccidentalExtraOffset}
-              fill={drawColor}
-              font-size="2em"
-            >
-              {noteAccidental}
-            </text>
-            {/* note head */}
-            <circle
-              cx="250"
-              cy={noteCY}
-              r="10"
-              stroke={drawColor}
-              fill={drawColor}
-            />
+            {/* Render all notes with accidentals and note heads */}
+            {noteData.map((note, idx) => (
+              <g key={`note-${idx}`}>
+                {/* accidental for note head (may be empty string) */}
+                <text
+                  x={note.noteX - 45}
+                  y={note.noteCY + note.noteAccidentalExtraOffset}
+                  fill={drawColor}
+                  fontSize="2em"
+                >
+                  {note.noteAccidental}
+                </text>
+                {/* note head */}
+                <circle
+                  cx={note.noteX}
+                  cy={note.noteCY}
+                  r="10"
+                  stroke={drawColor}
+                  fill={drawColor}
+                />
+              </g>
+            ))}
 
             {/* Key signature */}
             {getKeySignatureElements()}

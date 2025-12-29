@@ -105,6 +105,19 @@ const inputSchema = {
           "min": 20,
           "max": 300,
           "default": 80
+        },
+        {
+          "type": "int",
+          "id": "sequenceLength",
+          "label": "Sequence Length:",
+          "min": 1,
+          "default": 1
+        },
+        {
+          "type": "number",
+          "id": "extraRests",
+          "label": "Extra Rests (beats):",
+          "default": 1
         }
       ]
     }

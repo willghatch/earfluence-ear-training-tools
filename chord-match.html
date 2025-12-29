@@ -62,43 +62,63 @@
           return () => {
             const config = getCurrentConfig();
             if (getPlaying()) {
-              const choice = makeChordChoice(config);
-              console.log("playing choice: ", choice);
+              const sequenceLength = config.sequenceLength || 1;
+              const extraRests = config.extraRests || 0;
               const beatDuration = bpmSeconds(config.tempo);
               const noteDuration = beatDuration * config.noteDuration;
-              if (config.arpeggiate) {
-                // Play notes one at a time (but likely with overlap)
-                const arpeggiationDelay =
-                  config.arpeggiationSpeed * bpmMilliseconds(config.tempo);
+              const beatMs = bpmMilliseconds(config.tempo);
+              const noteDurationBeats = config.noteDuration;
 
-                let notesToPlay = [...choice];
-                if (config.arpeggioDirection === "backward") {
-                  notesToPlay.reverse();
-                } else if (config.arpeggioDirection === "both") {
-                  // Randomly choose direction for each arpeggio
-                  if (Math.random() < 0.5) {
-                    notesToPlay.reverse();
-                  }
-                }
-
-                notesToPlay.forEach((note, index) => {
-                  setTimeout(() => {
-                    synth.triggerAttackRelease(
-                      midiTone(note),
-                      noteDuration,
-                      Tone.now(),
-                    );
-                  }, index * arpeggiationDelay);
-                });
-              } else {
-                // Play all notes together
-                synth.triggerAttackRelease(midiTones(choice), noteDuration);
+              // Generate sequence of chords
+              const sequence = [];
+              for (let i = 0; i < sequenceLength; i++) {
+                const choice = makeChordChoice(config);
+                sequence.push(choice);
               }
+              console.log("playing sequence: ", sequence);
 
-              // Schedule next chord after cycle duration
-              const waitTime =
-                config.cycleBeats * bpmMilliseconds(config.tempo);
-              setTimeout(mkCont(choice), waitTime);
+              // Play each chord in the sequence
+              sequence.forEach((choice, chordIndex) => {
+                const chordStartTime = chordIndex * noteDurationBeats * beatMs;
+
+                if (config.arpeggiate) {
+                  // Play notes one at a time (but likely with overlap)
+                  const arpeggiationDelay =
+                    config.arpeggiationSpeed * beatMs;
+
+                  let notesToPlay = [...choice];
+                  if (config.arpeggioDirection === "backward") {
+                    notesToPlay.reverse();
+                  } else if (config.arpeggioDirection === "both") {
+                    // Randomly choose direction for each arpeggio
+                    if (Math.random() < 0.5) {
+                      notesToPlay.reverse();
+                    }
+                  }
+
+                  notesToPlay.forEach((note, index) => {
+                    setTimeout(() => {
+                      synth.triggerAttackRelease(
+                        midiTone(note),
+                        noteDuration,
+                        Tone.now(),
+                      );
+                    }, chordStartTime + index * arpeggiationDelay);
+                  });
+                } else {
+                  // Play all notes together
+                  setTimeout(() => {
+                    synth.triggerAttackRelease(midiTones(choice), noteDuration);
+                  }, chordStartTime);
+                }
+              });
+
+              // Calculate rest time: (sequenceLength + extraRests) * noteDuration beats (minimum 0)
+              const restBeats = Math.max(0, sequenceLength + extraRests) * noteDurationBeats;
+              const totalBeats = sequenceLength * noteDurationBeats + restBeats;
+
+              // Schedule next sequence
+              setTimeout(mkCont(lastChoice), totalBeats * beatMs);
             }
           };
         }

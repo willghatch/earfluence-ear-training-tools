@@ -58,18 +58,39 @@
       }
 
       function startPlaying(synth, getPlaying, lastChoice) {
-        // Play a note at the current BPM, then set a timeout for two beats later with
+        // Play a sequence of notes at the current BPM, then set a timeout with
         // a continuation to run if playing is still true.
         function mkCont(lastChoice) {
           return () => {
             const config = getCurrentConfig();
             if (getPlaying()) {
-              const choice = makeChoice(lastChoice, config);
-              console.log("playing choice: ", choice);
-              //const duration = "8n."; // 4n feels too long, but 8n feels too short.
+              const sequenceLength = config.sequenceLength || 1;
+              const extraRests = config.extraRests || 0;
               const duration = bpmSeconds(config.tempo);
-              synth.triggerAttackRelease(midiTone(choice || 60), duration);
-              setTimeout(mkCont(choice), 2 * bpmMilliseconds(config.tempo));
+              const beatMs = bpmMilliseconds(config.tempo);
+
+              // Generate sequence of notes
+              const sequence = [];
+              let currentChoice = lastChoice;
+              for (let i = 0; i < sequenceLength; i++) {
+                currentChoice = makeChoice(currentChoice, config);
+                sequence.push(currentChoice);
+              }
+              console.log("playing sequence: ", sequence);
+
+              // Play each note in the sequence
+              sequence.forEach((note, index) => {
+                setTimeout(() => {
+                  synth.triggerAttackRelease(midiTone(note || 60), duration);
+                }, index * beatMs);
+              });
+
+              // Calculate rest time: sequenceLength + extraRests (minimum 0)
+              const restBeats = Math.max(0, sequenceLength + extraRests);
+              const totalBeats = sequenceLength + restBeats;
+
+              // Schedule next sequence
+              setTimeout(mkCont(currentChoice), totalBeats * beatMs);
             }
           };
         }
