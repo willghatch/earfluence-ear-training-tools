@@ -370,6 +370,39 @@
           });
         });
 
+        // Generate highlight elements for tonic if enabled
+        const getHighlightElements = () => {
+          if (!config.highlight) {
+            return [];
+          }
+
+          const elements = [];
+          const highlightColor = config.highlightColor || "yellow";
+          const tonicPosition = offsetFromC36(config.tonic);
+
+          // Find all positions within the grand staff that match the tonic
+          // Positions range from 3 (bottom of bass staff) to 25 (top of treble staff)
+          // Each note repeats every 7 positions (one octave)
+          for (let position = 3; position <= 25; position++) {
+            if ((position - tonicPosition) % 7 === 0) {
+              const yPosition = offsetFromTop(position);
+              elements.push(
+                <rect
+                  key={`highlight-${position}`}
+                  x="0"
+                  y={yPosition - staffLineSpace / 6}
+                  width={staffWidth}
+                  height={staffLineSpace / 3}
+                  fill={highlightColor}
+                  opacity="0.3"
+                />,
+              );
+            }
+          }
+
+          return elements;
+        };
+
         return (
           <svg
             width={Math.max(500, staffWidth + 100)}
@@ -377,6 +410,9 @@
             version="1.1"
             xmlns="http://www.w3.org/2000/svg"
           >
+            {/* Tonic highlight - drawn first so it appears underneath */}
+            {getHighlightElements()}
+
             {/* Upper ledger lines for all notes */}
             {noteData.map((notesAtBeat, beatIdx) =>
               notesAtBeat.map((note, noteIdx) => (
