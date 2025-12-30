@@ -7,18 +7,30 @@
 
 const { inputCreate } = (() => {
   /**
+   * Normalize type aliases to canonical type names
+   */
+  function normalizeType(type) {
+    const aliases = {
+      checkbox: "boolean",
+      string: "text",
+    };
+    return aliases[type] || type;
+  }
+
+  /**
    * Check if a type is a primitive type (not a container)
    */
   function isPrimitiveType(type) {
+    const normalized = normalizeType(type);
     return [
       "int",
       "float",
       "number",
       "text",
-      "checkbox",
+      "boolean",
       "radio",
       "json",
-    ].includes(type);
+    ].includes(normalized);
   }
 
   /**
@@ -95,14 +107,15 @@ const { inputCreate } = (() => {
       return JSON.parse(JSON.stringify(itemType.default));
     }
 
-    switch (itemType.type) {
+    const type = normalizeType(itemType.type);
+    switch (type) {
       case "int":
       case "float":
       case "number":
         return 0;
       case "text":
         return "";
-      case "checkbox":
+      case "boolean":
         return false;
       case "json":
         return null;
@@ -160,7 +173,8 @@ const { inputCreate } = (() => {
       return control.default;
     }
 
-    switch (control.type) {
+    const type = normalizeType(control.type);
+    switch (type) {
       case "int":
         return parseInt(element.value) || 0;
       case "float":
@@ -168,7 +182,7 @@ const { inputCreate } = (() => {
         return parseFloat(element.value) || 0;
       case "text":
         return element.value;
-      case "checkbox":
+      case "boolean":
         return element.checked;
       case "radio": {
         const checked = element.querySelector("input:checked");
@@ -267,7 +281,8 @@ const { inputCreate } = (() => {
       return;
     }
 
-    switch (control.type) {
+    const type = normalizeType(control.type);
+    switch (type) {
       case "int":
       case "float":
       case "number":
@@ -284,7 +299,7 @@ const { inputCreate } = (() => {
       case "text":
         element.value = value;
         break;
-      case "checkbox":
+      case "boolean":
         element.checked = value;
         break;
       case "radio": {
@@ -665,7 +680,7 @@ const { inputCreate } = (() => {
         // For primitive types, extract just the input (except radio which needs the whole group)
         if (
           isPrimitiveType(control.itemType.type) &&
-          control.itemType.type !== "radio"
+          normalizeType(control.itemType.type) !== "radio"
         ) {
           const input = extractInputFromControl(itemEl);
           if (input) {
@@ -741,7 +756,7 @@ const { inputCreate } = (() => {
       // For primitive types, extract just the input (except radio which needs the whole group)
       if (
         isPrimitiveType(control.itemType.type) &&
-        control.itemType.type !== "radio"
+        normalizeType(control.itemType.type) !== "radio"
       ) {
         const input = extractInputFromControl(itemEl);
         if (input) {
@@ -1042,7 +1057,7 @@ const { inputCreate } = (() => {
    * @param {HTMLElement} container - The root container element
    */
   function renderControl(control, schema, functions, path, container) {
-    const type = control.type;
+    const type = normalizeType(control.type);
 
     switch (type) {
       case "import-export":
@@ -1057,7 +1072,7 @@ const { inputCreate } = (() => {
         return renderNumber(control, path, container, functions);
       case "text":
         return renderText(control, path);
-      case "checkbox":
+      case "boolean":
         return renderCheckbox(control, path);
       case "radio":
         return renderRadio(control, path);
