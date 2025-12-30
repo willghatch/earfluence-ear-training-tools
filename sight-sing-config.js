@@ -162,6 +162,12 @@ const inputSchema = {
           label: "Extra Rests (beats):",
           default: 1,
         },
+        {
+          type: "int",
+          id: "transposeDisplay",
+          label: "Transpose Display (semitones):",
+          default: 0,
+        },
       ],
     },
     {

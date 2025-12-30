@@ -204,9 +204,11 @@
         const tonicStaffOffsets = [0, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6];
         const tonicStaffBaseArray = [0, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6];
         const keySigNumArray = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5];
-        const keySigNum = keySigNumArray[config.tonic % 12];
+        const transposeDisplay = config.transposeDisplay || 0;
+        const displayTonic = config.tonic + transposeDisplay;
+        const keySigNum = keySigNumArray[displayTonic % 12];
         const tonicSemisOffsetFromBottomLineNatural =
-          config.tonic - bottomLineNote;
+          displayTonic - bottomLineNote;
 
         // Note spacing configuration
         const noteSpacing = 80; // Horizontal space between notes
@@ -216,10 +218,10 @@
           staffBaseWidth + (noteSequence.length - 1) * noteSpacing; // Extended width
 
         const offsetFromC36 = (note) => {
-          const noteOffsetFromTonic = (note - (config.tonic % 12)) % 12;
+          const noteOffsetFromTonic = (note - (displayTonic % 12)) % 12;
           const withinOctaveOffset = tonicStaffBaseArray[noteOffsetFromTonic];
           const noteFromC = note % 12;
-          const tonicFromC = config.tonic % 12;
+          const tonicFromC = displayTonic % 12;
           const tonicStaffOffset = tonicStaffOffsets[tonicFromC];
           const noteStaffBase = tonicStaffBaseArray[noteOffsetFromTonic];
           const noteOctave = Math.floor(note / 12);
@@ -240,7 +242,7 @@
         };
 
         const numSignatureMods = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5][
-          config.tonic % 12
+          displayTonic % 12
         ];
         const numModsAbs = Math.abs(numSignatureMods);
         const noteAccidentalArrayNumeric = [
@@ -332,9 +334,11 @@
 
           // Process each note in this beat
           return simultaneousNotes.map((noteUse, voiceIdx) => {
-            const noteOffsetFromC36 = offsetFromC36(noteUse);
+            const displayNote = noteUse + transposeDisplay;
+            const noteOffsetFromC36 = offsetFromC36(displayNote);
             const noteCY = offsetFromTop(noteOffsetFromC36);
-            const noteOffsetFromTonic = (noteUse - (config.tonic % 12)) % 12;
+            const noteOffsetFromTonic =
+              (displayNote - (displayTonic % 12)) % 12;
             const noteAccidentalDirection =
               noteAccidentalArrayNumeric[noteOffsetFromTonic];
             const hasAccidental = noteAccidentalDirection !== 0;
@@ -378,7 +382,7 @@
 
           const elements = [];
           const highlightColor = config.highlightColor || "yellow";
-          const tonicPosition = offsetFromC36(config.tonic);
+          const tonicPosition = offsetFromC36(displayTonic);
 
           // Find all positions within the grand staff that match the tonic
           // Positions range from 3 (bottom of bass staff) to 25 (top of treble staff)
