@@ -37,6 +37,7 @@
     ></script>
     <script type="text/babel">
       let playingGlobal = false;
+      let volumeNode = null;
       let globalTogglePlay = () => {
         console.log("initial empty globalTogglePlay called...");
       };
@@ -74,6 +75,12 @@
               sequence.forEach((notes, index) => {
                 setTimeout(
                   () => {
+                    // Update volume from current config before playing
+                    const currentConfig = getCurrentConfig();
+                    const volumeDb = computeVolumeDb(currentConfig.volume);
+                    if (volumeNode) {
+                      volumeNode.volume.value = volumeDb;
+                    }
                     // Play each voice with its corresponding synth
                     notes.forEach((note, voiceIdx) => {
                       if (voiceIdx < synths.length) {
@@ -122,6 +129,14 @@
           const instruments = config.instruments || ["default"];
           const numVoices = config.numVoices || 1;
 
+          // Create volume control if it doesn't exist
+          if (!volumeNode) {
+            volumeNode = new Tone.Volume(0).toDestination();
+          }
+          // Update volume from config
+          const volumeDb = computeVolumeDb(config.volume);
+          volumeNode.volume.value = volumeDb;
+
           // Create a synth for each voice with the corresponding instrument
           const synths = [];
           for (let i = 0; i < numVoices; i++) {
@@ -142,7 +157,7 @@
             if (instrumentType !== "default") {
               synthOptions.oscillator = { type: instrumentType };
             }
-            const synth = new Tone.Synth(synthOptions).toDestination();
+            const synth = new Tone.Synth(synthOptions).connect(volumeNode);
             synths.push(synth);
           }
 

@@ -28,10 +28,20 @@
     <script src="https://unpkg.com/tone@15"></script>
     <script>
       let playingGlobal = false;
+      let volumeNode = null;
 
       function play() {
         const config = getCurrentConfig();
         const instrument = config.instrument || "default";
+
+        // Create volume control if it doesn't exist
+        if (!volumeNode) {
+          volumeNode = new Tone.Volume(0).toDestination();
+        }
+        // Update volume from config
+        const volumeDb = computeVolumeDb(config.volume);
+        volumeNode.volume.value = volumeDb;
+
         const synthOptions = {
           envelope: {
             attack: 0.05,
@@ -48,7 +58,7 @@
         const synth = new Tone.PolySynth(
           Tone.Synth,
           synthOptions,
-        ).toDestination();
+        ).connect(volumeNode);
         Tone.Transport.bpm.value = config.tempo;
         playingGlobal = true;
         startPlaying(synth, getPlaying, undefined);
@@ -108,6 +118,12 @@
                   notesToPlay.forEach((note, index) => {
                     setTimeout(
                       () => {
+                        // Update volume from current config before playing
+                        const currentConfig = getCurrentConfig();
+                        const volumeDb = computeVolumeDb(currentConfig.volume);
+                        if (volumeNode) {
+                          volumeNode.volume.value = volumeDb;
+                        }
                         synth.triggerAttackRelease(
                           midiTone(note),
                           noteDuration,
@@ -120,6 +136,12 @@
                 } else {
                   // Play all notes together
                   setTimeout(() => {
+                    // Update volume from current config before playing
+                    const currentConfig = getCurrentConfig();
+                    const volumeDb = computeVolumeDb(currentConfig.volume);
+                    if (volumeNode) {
+                      volumeNode.volume.value = volumeDb;
+                    }
                     synth.triggerAttackRelease(midiTones(choice), noteDuration);
                   }, chordStartTime);
                 }

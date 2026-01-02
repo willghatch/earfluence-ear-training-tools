@@ -128,6 +128,10 @@ function bpmMilliseconds(bpm) {
   return bpmSeconds(bpm) * 1000;
 }
 
+function computeVolumeDb(volumePercent) {
+  return volumePercent === 0 ? -Infinity : Math.log10(volumePercent / 100) * 20;
+}
+
 function midiTone(midiNoteNumber) {
   return Tone.Frequency(midiNoteNumber, "midi").toNote();
 }
@@ -137,7 +141,9 @@ function midiTones(midiNoteNumberArray) {
 
 function playCadence(config, chords) {
   // chords is an array of arrays of midi numbers.
-  const synth = new Tone.PolySynth().toDestination();
+  const volumeDb = computeVolumeDb(config.volume);
+  const volumeNode = new Tone.Volume(volumeDb).toDestination();
+  const synth = new Tone.PolySynth().connect(volumeNode);
   Tone.Transport.bpm.value = config.tempo;
   const tonic = config.tonic;
 

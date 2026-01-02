@@ -143,6 +143,14 @@ const inputSchema = {
           default: 80,
         },
         {
+          type: "number",
+          id: "volume",
+          label: "Volume:",
+          min: 0,
+          max: 100,
+          default: 80,
+        },
+        {
           type: "int",
           id: "numVoices",
           label: "Number of Voices:",
