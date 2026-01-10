@@ -55,10 +55,9 @@
         if (instrument !== "default") {
           synthOptions.oscillator = { type: instrument };
         }
-        const synth = new Tone.PolySynth(
-          Tone.Synth,
-          synthOptions,
-        ).connect(volumeNode);
+        const synth = new Tone.PolySynth(Tone.Synth, synthOptions).connect(
+          volumeNode,
+        );
         Tone.Transport.bpm.value = config.tempo;
         playingGlobal = true;
         startPlaying(synth, getPlaying, undefined);
