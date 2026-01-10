@@ -257,6 +257,8 @@ function initializeConfigEditor() {
       noteName: noteName,
       randomTonic: randomTonic,
     },
+    autoSaveKey: "chord-match",
+    initialLoadFromAutoSave: true,
   });
 }
 

@@ -255,6 +255,8 @@ function initializeConfigEditor() {
       randomTonic: randomTonic,
       getIntervalLabel: getIntervalLabel,
     },
+    autoSaveKey: "pitch-match",
+    initialLoadFromAutoSave: true,
   });
 }
 

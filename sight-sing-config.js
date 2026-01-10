@@ -294,6 +294,8 @@ function initializeConfigEditor() {
       randomTonic: randomTonic,
       getIntervalLabel: getIntervalLabel,
     },
+    autoSaveKey: "sight-sing",
+    initialLoadFromAutoSave: true,
   });
 }
 
