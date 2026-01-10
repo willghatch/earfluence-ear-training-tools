@@ -38,6 +38,7 @@
     <script type="text/babel">
       let playingGlobal = false;
       let volumeNode = null;
+      let wakeLock = null;
       let globalTogglePlay = () => {
         console.log("initial empty globalTogglePlay called...");
       };
@@ -165,12 +166,37 @@
           setLastChoice(null);
           playingGlobal = true;
           setPlayingLocal(true);
+
+          // Request screen wake lock
+          if (navigator.wakeLock) {
+            navigator.wakeLock
+              .request("screen")
+              .then((lock) => {
+                wakeLock = lock;
+              })
+              .catch((err) => {
+                console.log("Wake lock request failed:", err);
+              });
+          }
+
           startPlayLoop(synths, getPlaying, setLastChoice);
         }
         function stop() {
           playingGlobal = false;
           setPlayingLocal(false);
           setLastChoice(null);
+
+          // Release screen wake lock
+          if (wakeLock) {
+            wakeLock
+              .release()
+              .then(() => {
+                wakeLock = null;
+              })
+              .catch((err) => {
+                console.log("Wake lock release failed:", err);
+              });
+          }
         }
         function togglePlay() {
           if (playingGlobal) {
@@ -678,6 +704,7 @@
           </p>
           <p>
             <strong>2026-01-10:</strong> Added localStorage auto-save feature.
+            Added screen wake lock while playing.
           </p>
         </div>
       </div>
