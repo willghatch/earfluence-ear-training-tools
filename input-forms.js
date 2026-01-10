@@ -7,6 +7,32 @@
 
 const { inputCreate } = (() => {
   /**
+   * Save configuration to localStorage
+   */
+  function saveToLocalStorage(key, config) {
+    try {
+      localStorage.setItem(key, JSON.stringify(config));
+      return true;
+    } catch (e) {
+      console.error("Failed to save to localStorage:", e);
+      return false;
+    }
+  }
+
+  /**
+   * Load configuration from localStorage
+   */
+  function loadFromLocalStorage(key) {
+    try {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      console.error("Failed to load from localStorage:", e);
+      return null;
+    }
+  }
+
+  /**
    * Normalize type aliases to canonical type names
    */
   function normalizeType(type) {
@@ -1133,6 +1159,8 @@ const { inputCreate } = (() => {
    */
   function inputCreate(schema, selector, options = {}) {
     const functions = options.functions || {};
+    const autoSaveKey = options.autoSaveKey || null;
+    const initialLoadFromAutoSave = options.initialLoadFromAutoSave || false;
     const container = document.querySelector(selector);
 
     if (!container) {
@@ -1176,9 +1204,16 @@ const { inputCreate } = (() => {
 
     // Populate API methods
     api.getCurrentConfig = () => getCurrentConfig(schema, container);
-    api.setConfig = (config) => setConfig(schema, container, config, functions);
-    api.resetConfig = () =>
-      setConfig(schema, container, getDefaultConfig(schema), functions);
+    api.setConfig = (config, skipAutoSave = false) => {
+      setConfig(schema, container, config, functions);
+      if (autoSaveKey && !skipAutoSave) {
+        saveToLocalStorage(autoSaveKey, config);
+      }
+    };
+    api.resetConfig = () => {
+      const defaultConfig = getDefaultConfig(schema);
+      api.setConfig(defaultConfig);
+    };
     api.exportConfig = () => {
       const configIO = container.querySelector("#configIO");
       if (configIO) {
@@ -1196,9 +1231,50 @@ const { inputCreate } = (() => {
         }
       }
     };
+    api.saveCurrentConfigToLocalStorage = (key) => {
+      const config = api.getCurrentConfig();
+      return saveToLocalStorage(key, config);
+    };
+    api.loadCurrentConfigFromLocalStorage = (key) => {
+      const config = loadFromLocalStorage(key);
+      if (config !== null) {
+        api.setConfig(config, true); // Skip auto-save when loading
+        return true;
+      }
+      return false;
+    };
 
-    // Apply default configuration to ensure all nested values are properly set
-    api.resetConfig();
+    // Apply default configuration or load from auto-save
+    if (initialLoadFromAutoSave && autoSaveKey) {
+      const loaded = api.loadCurrentConfigFromLocalStorage(autoSaveKey);
+      if (!loaded) {
+        // If load failed, apply defaults
+        api.resetConfig();
+      }
+    } else {
+      // Apply default configuration to ensure all nested values are properly set
+      api.resetConfig();
+    }
+
+    // Set up auto-save if key provided
+    if (autoSaveKey) {
+      const inputs = container.querySelectorAll("input, select, textarea");
+      inputs.forEach((input) => {
+        input.addEventListener("change", () => {
+          api.saveCurrentConfigToLocalStorage(autoSaveKey);
+        });
+        // For text and number inputs, also save on input event for real-time saving
+        if (
+          input.type !== "radio" &&
+          input.type !== "checkbox" &&
+          input.tagName !== "SELECT"
+        ) {
+          input.addEventListener("input", () => {
+            api.saveCurrentConfigToLocalStorage(autoSaveKey);
+          });
+        }
+      });
+    }
 
     return api;
   }
