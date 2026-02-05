@@ -101,10 +101,17 @@ const inputSchema = {
                 default: false,
               },
               {
-                type: "json",
+                type: "dynamicList",
                 id: "inversionWeights",
-                label: "Inversion Weights:",
+                itemType: {
+                  type: "number",
+                  min: 0,
+                },
+                labelFunction: "getInversionLabel",
                 default: [10],
+                minLength: 1,
+                removeType: "onlyLast",
+                cssClass: "interval-grid",
               },
             ],
           },
@@ -176,6 +183,12 @@ const inputSchema = {
       controls: [
         {
           type: "checkbox",
+          id: "tightVoicing",
+          label: "Tight Voicing:",
+          default: true,
+        },
+        {
+          type: "checkbox",
           id: "arpeggiate",
           label: "Arpeggiate Chords",
           default: false,
@@ -188,6 +201,7 @@ const inputSchema = {
             { value: "forward" },
             { value: "backward" },
             { value: "both" },
+            { value: "random-mix" },
           ],
           default: "forward",
         },
@@ -504,12 +518,13 @@ function applyInversion(chordNotes, chord, config, previousChordRoot) {
     return chordNotes;
   }
 
-  // Apply inversions: each inversion raises the lowest note by an octave
+  // Apply inversions: each inversion rotates the lowest note to the end, raised by an octave
   let notes = [...chordNotes];
   for (let i = 0; i < inversionIndex; i++) {
     const minNote = Math.min(...notes);
     const minIdx = notes.indexOf(minNote);
-    notes[minIdx] = minNote + 12;
+    notes.splice(minIdx, 1);
+    notes.push(minNote + 12);
   }
 
   // Find new lowest note (the inverted bass)

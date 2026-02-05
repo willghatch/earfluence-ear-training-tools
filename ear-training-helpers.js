@@ -253,3 +253,25 @@ function weightedRandomIndex(weightsArray) {
   if (choices.length === 0) return 0;
   return makeWeightedChoice(choices);
 }
+
+function applyLooseVoicing(chordNotes, config) {
+  // Randomize octaves of all notes except the lowest, keeping lowest fixed.
+  // Each note stays within [lowPitch, highPitch] and above the lowest note.
+  const lowestNote = Math.min(...chordNotes);
+  let lowestUsed = false;
+  return chordNotes.map((note) => {
+    if (note === lowestNote && !lowestUsed) {
+      lowestUsed = true;
+      return note;
+    }
+    const pc = note % 12;
+    const candidates = [];
+    for (let n = pc; n <= config.highPitch; n += 12) {
+      if (n > lowestNote && n >= config.lowPitch) {
+        candidates.push(n);
+      }
+    }
+    if (candidates.length === 0) return note;
+    return candidates[getRandomInt(candidates.length)];
+  });
+}

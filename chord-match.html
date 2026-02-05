@@ -96,7 +96,8 @@
                 const choice = makeWeightedChoice(weights);
                 const chordNotes = chooseAndRootChord(choice, config);
                 const chord = choice[1];
-                const finalNotes = applyInversion(chordNotes, chord, config, currentRootNote);
+                const invertedNotes = applyInversion(chordNotes, chord, config, currentRootNote);
+                const finalNotes = config.tightVoicing === false ? applyLooseVoicing(invertedNotes, config) : invertedNotes;
                 currentRootNote = Math.min(...finalNotes);
                 sequence.push(finalNotes);
               }
@@ -117,6 +118,11 @@
                     // Randomly choose direction for each arpeggio
                     if (Math.random() < 0.5) {
                       notesToPlay.reverse();
+                    }
+                  } else if (config.arpeggioDirection === "random-mix") {
+                    for (let i = notesToPlay.length - 1; i > 0; i--) {
+                      const j = getRandomInt(i + 1);
+                      [notesToPlay[i], notesToPlay[j]] = [notesToPlay[j], notesToPlay[i]];
                     }
                   }
 
