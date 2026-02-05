@@ -218,6 +218,8 @@ const inputSchema = {
       ],
       chromatic: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
       "only accidentals": [0, 100, 0, 100, 0, 0, 100, 0, 100, 0, 100, 0],
+      "minor + harmonic": [10, 0, 10, 10, 0, 10, 0, 10, 10, 0, 10, 10],
+      "major + mixolydian": [10, 0, 10, 0, 10, 10, 0, 10, 0, 10, 10, 10],
     },
     intervalPresets: {
       "no change": [],

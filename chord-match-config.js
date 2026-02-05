@@ -239,6 +239,40 @@ const inputSchema = {
           weights: [0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         },
       ],
+      "minor + harmonic triads": [
+        {
+          name: "Major",
+          offsets: [0, 4, 7],
+          weights: [0, 0, 0, 10, 0, 0, 0, 10, 10, 0, 10, 0],
+        },
+        {
+          name: "minor",
+          offsets: [0, 3, 7],
+          weights: [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 0, 0],
+        },
+        {
+          name: "diminished",
+          offsets: [0, 3, 6],
+          weights: [0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 10],
+        },
+      ],
+      "major + mixolydian triads": [
+        {
+          name: "Major",
+          offsets: [0, 4, 7],
+          weights: [10, 0, 0, 0, 0, 10, 0, 10, 0, 0, 10, 0],
+        },
+        {
+          name: "minor",
+          offsets: [0, 3, 7],
+          weights: [0, 0, 10, 0, 10, 0, 0, 10, 0, 10, 0, 0],
+        },
+        {
+          name: "diminished",
+          offsets: [0, 3, 6],
+          weights: [0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 10],
+        },
+      ],
     },
   },
 };
