@@ -52,7 +52,10 @@
               const sequenceLength = config.sequenceLength || 1;
               const extraRests =
                 config.extraRests !== undefined ? config.extraRests : 1;
-              const legatoStaccato = config.legatoStaccato !== undefined ? config.legatoStaccato : 0.95;
+              const legatoStaccato =
+                config.legatoStaccato !== undefined
+                  ? config.legatoStaccato
+                  : 0.95;
               const duration = bpmSeconds(config.tempo) * legatoStaccato;
               const beatMs = bpmMilliseconds(config.tempo);
               const numVoices = config.numVoices || 1;

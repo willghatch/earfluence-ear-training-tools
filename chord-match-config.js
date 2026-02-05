@@ -541,8 +541,9 @@ function applyInversion(chordNotes, chord, config, previousChordRoot) {
   const intervals = notes.map((n) => n - newLowest);
 
   // Use interval weights to choose octave for the inverted chord
-  const intervalWeights =
-    config.intervalWeights || [10, 20, 20, 20, 10, 10, 7, 7, 5, 4, 3, 2, 1, 1];
+  const intervalWeights = config.intervalWeights || [
+    10, 20, 20, 20, 10, 10, 7, 7, 5, 4, 3, 2, 1, 1,
+  ];
 
   // Find valid octave candidates for the inverted bass
   const candidates = [];

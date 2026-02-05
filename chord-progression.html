@@ -81,8 +81,10 @@
           const beatsPerChord = config.beatsPerChord || 4;
           const extraRests = config.extraRests || 0;
           const beatMs = bpmMilliseconds(config.tempo);
-          const legatoStaccato = config.legatoStaccato !== undefined ? config.legatoStaccato : 0.95;
-          const noteDuration = bpmSeconds(config.tempo) * beatsPerChord * legatoStaccato;
+          const legatoStaccato =
+            config.legatoStaccato !== undefined ? config.legatoStaccato : 0.95;
+          const noteDuration =
+            bpmSeconds(config.tempo) * beatsPerChord * legatoStaccato;
 
           // Re-parse each iteration so live config changes take effect
           const currentChords = parseProgression(config.progression);
@@ -120,7 +122,10 @@
             } else if (config.arpeggioDirection === "random-mix") {
               for (let i = notesToPlay.length - 1; i > 0; i--) {
                 const j = getRandomInt(i + 1);
-                [notesToPlay[i], notesToPlay[j]] = [notesToPlay[j], notesToPlay[i]];
+                [notesToPlay[i], notesToPlay[j]] = [
+                  notesToPlay[j],
+                  notesToPlay[i],
+                ];
               }
             }
             notesToPlay.forEach((note, index) => {
@@ -182,9 +187,9 @@
           </p>
           <p>
             The roman numeral (I through VII) refers to a scale degree root.
-            Each numeral refers to the <strong>major scale</strong> root for that
-            degree: I = do, II = re, III = mi, IV = fa, V = so, VI = la, VII =
-            ti. To get other roots, use <code>b</code> (flat) or
+            Each numeral refers to the <strong>major scale</strong> root for
+            that degree: I = do, II = re, III = mi, IV = fa, V = so, VI = la,
+            VII = ti. To get other roots, use <code>b</code> (flat) or
             <code>#</code> (sharp) before the numeral. For example,
             <code>bVII</code> is a chord on te, and <code>#IV</code> is a chord
             on fi. For instance, in a minor key you would typically write
@@ -196,20 +201,14 @@
             minor triads. For example, <code>I</code> is a major chord and
             <code>i</code> is a minor chord, both on the tonic.
           </p>
-          <p>
-            You can add a 7th chord suffix after the numeral:
-          </p>
+          <p>You can add a 7th chord suffix after the numeral:</p>
           <ul>
             <li>
               <code>7</code> or <code>D7</code> &mdash; dominant 7th (major
               triad + minor 7th)
             </li>
-            <li>
-              <code>M7</code> &mdash; major 7th (major triad + major 7th)
-            </li>
-            <li>
-              <code>m7</code> &mdash; minor 7th (minor triad + minor 7th)
-            </li>
+            <li><code>M7</code> &mdash; major 7th (major triad + major 7th)</li>
+            <li><code>m7</code> &mdash; minor 7th (minor triad + minor 7th)</li>
             <li>
               <code>d7</code> &mdash; diminished 7th (diminished triad +
               diminished 7th)
@@ -236,9 +235,7 @@
               A solfege syllable: do, ra, re, me, mi, fa, fi, so (or sol), le,
               la, te, ti
             </li>
-            <li>
-              A letter note with optional flat or sharp: C, Db, F#, etc.
-            </li>
+            <li>A letter note with optional flat or sharp: C, Db, F#, etc.</li>
             <li>
               A scale degree number (1&ndash;7) with optional flat or sharp: 1,
               b3, #4, etc. Scale degrees use major scale roots (same convention

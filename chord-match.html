@@ -84,8 +84,12 @@
               const sequenceLength = config.sequenceLength || 1;
               const extraRests = config.extraRests || 0;
               const beatDuration = bpmSeconds(config.tempo);
-              const legatoStaccato = config.legatoStaccato !== undefined ? config.legatoStaccato : 0.95;
-              const noteDuration = beatDuration * config.noteDuration * legatoStaccato;
+              const legatoStaccato =
+                config.legatoStaccato !== undefined
+                  ? config.legatoStaccato
+                  : 0.95;
+              const noteDuration =
+                beatDuration * config.noteDuration * legatoStaccato;
               const beatMs = bpmMilliseconds(config.tempo);
               const noteDurationBeats = config.noteDuration;
 
@@ -97,8 +101,16 @@
                 const choice = makeWeightedChoice(weights);
                 const chordNotes = chooseAndRootChord(choice, config);
                 const chord = choice[1];
-                const invertedNotes = applyInversion(chordNotes, chord, config, currentRootNote);
-                const finalNotes = config.tightVoicing === false ? applyLooseVoicing(invertedNotes, config) : invertedNotes;
+                const invertedNotes = applyInversion(
+                  chordNotes,
+                  chord,
+                  config,
+                  currentRootNote,
+                );
+                const finalNotes =
+                  config.tightVoicing === false
+                    ? applyLooseVoicing(invertedNotes, config)
+                    : invertedNotes;
                 currentRootNote = Math.min(...finalNotes);
                 sequence.push(finalNotes);
               }
@@ -123,7 +135,10 @@
                   } else if (config.arpeggioDirection === "random-mix") {
                     for (let i = notesToPlay.length - 1; i > 0; i--) {
                       const j = getRandomInt(i + 1);
-                      [notesToPlay[i], notesToPlay[j]] = [notesToPlay[j], notesToPlay[i]];
+                      [notesToPlay[i], notesToPlay[j]] = [
+                        notesToPlay[j],
+                        notesToPlay[i],
+                      ];
                     }
                   }
 

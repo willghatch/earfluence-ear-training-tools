@@ -187,9 +187,21 @@ function parseBassNote(str) {
 
   // Try solfege (longest match first: sol before so)
   const solfegeOptions = [
-    ["sol", 7], ["do", 0], ["ra", 1], ["re", 2], ["me", 3], ["mi", 4],
-    ["fa", 5], ["fi", 6], ["so", 7], ["le", 8], ["la", 9], ["te", 10],
-    ["ti", 11], ["ri", 3], ["si", 11],
+    ["sol", 7],
+    ["do", 0],
+    ["ra", 1],
+    ["re", 2],
+    ["me", 3],
+    ["mi", 4],
+    ["fa", 5],
+    ["fi", 6],
+    ["so", 7],
+    ["le", 8],
+    ["la", 9],
+    ["te", 10],
+    ["ti", 11],
+    ["ri", 3],
+    ["si", 11],
   ];
   for (const [syl, offset] of solfegeOptions) {
     if (str === syl) return offset;
@@ -210,8 +222,13 @@ function parseBassNote(str) {
   // Try scale degree number (optional b/# prefix, then digit 1-7)
   let accidental = 0;
   let numStr = str;
-  if (str[0] === "b") { accidental = -1; numStr = str.substring(1); }
-  else if (str[0] === "#") { accidental = 1; numStr = str.substring(1); }
+  if (str[0] === "b") {
+    accidental = -1;
+    numStr = str.substring(1);
+  } else if (str[0] === "#") {
+    accidental = 1;
+    numStr = str.substring(1);
+  }
   const num = parseInt(numStr);
   if (!isNaN(num) && num >= 1 && num <= 7 && String(num) === numStr) {
     return (majorRootOffsets[num] + accidental + 12) % 12;
@@ -358,7 +375,13 @@ function weightedClosestChoice(options, reference) {
 
 function rootChordInRange(rootOffset, offsets, config, previousRoot, bassNote) {
   if (bassNote !== undefined && bassNote !== null) {
-    return slashChordInRange(rootOffset, offsets, config, previousRoot, bassNote);
+    return slashChordInRange(
+      rootOffset,
+      offsets,
+      config,
+      previousRoot,
+      bassNote,
+    );
   }
 
   const baseRoot = config.tonic + rootOffset;
@@ -383,7 +406,13 @@ function rootChordInRange(rootOffset, offsets, config, previousRoot, bassNote) {
   return offsets.map((o) => bestRoot + o);
 }
 
-function slashChordInRange(rootOffset, offsets, config, previousRoot, bassNote) {
+function slashChordInRange(
+  rootOffset,
+  offsets,
+  config,
+  previousRoot,
+  bassNote,
+) {
   const bassPc = (config.tonic + bassNote) % 12;
 
   // Find valid bass octaves where all chord tones fit above bass in range
@@ -395,7 +424,7 @@ function slashChordInRange(rootOffset, offsets, config, previousRoot, bassNote) 
     for (const offset of offsets) {
       const pc = (config.tonic + rootOffset + offset) % 12;
       if (pc === bassPc) continue; // this chord tone is represented by the bass
-      const diff = ((pc - (bass % 12)) % 12 + 12) % 12;
+      const diff = (((pc - (bass % 12)) % 12) + 12) % 12;
       const note = bass + (diff === 0 ? 12 : diff);
       if (note > config.highPitch) {
         valid = false;
@@ -419,7 +448,7 @@ function slashChordInRange(rootOffset, offsets, config, previousRoot, bassNote) 
   for (const offset of offsets) {
     const pc = (config.tonic + rootOffset + offset) % 12;
     if (pc === bassPc) continue;
-    const diff = ((pc - (selectedBass % 12)) % 12 + 12) % 12;
+    const diff = (((pc - (selectedBass % 12)) % 12) + 12) % 12;
     notes.push(selectedBass + (diff === 0 ? 12 : diff));
   }
   return notes;
