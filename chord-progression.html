@@ -81,7 +81,8 @@
           const beatsPerChord = config.beatsPerChord || 4;
           const extraRests = config.extraRests || 0;
           const beatMs = bpmMilliseconds(config.tempo);
-          const noteDuration = bpmSeconds(config.tempo) * beatsPerChord;
+          const legatoStaccato = config.legatoStaccato !== undefined ? config.legatoStaccato : 0.95;
+          const noteDuration = bpmSeconds(config.tempo) * beatsPerChord * legatoStaccato;
 
           // Re-parse each iteration so live config changes take effect
           const currentChords = parseProgression(config.progression);

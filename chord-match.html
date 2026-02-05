@@ -84,7 +84,8 @@
               const sequenceLength = config.sequenceLength || 1;
               const extraRests = config.extraRests || 0;
               const beatDuration = bpmSeconds(config.tempo);
-              const noteDuration = beatDuration * config.noteDuration;
+              const legatoStaccato = config.legatoStaccato !== undefined ? config.legatoStaccato : 0.95;
+              const noteDuration = beatDuration * config.noteDuration * legatoStaccato;
               const beatMs = bpmMilliseconds(config.tempo);
               const noteDurationBeats = config.noteDuration;
 

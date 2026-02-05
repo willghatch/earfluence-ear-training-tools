@@ -235,6 +235,15 @@ const inputSchema = {
           default: 0,
         },
         {
+          type: "number",
+          id: "legatoStaccato",
+          label: "Legato/Staccato (0-1):",
+          min: 0,
+          max: 1,
+          step: 0.05,
+          default: 0.95,
+        },
+        {
           type: "int",
           id: "lowPitch",
           label: "Low Pitch (MIDI):",
