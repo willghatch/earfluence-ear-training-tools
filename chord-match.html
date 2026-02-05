@@ -90,9 +90,15 @@
 
               // Generate sequence of chords
               const sequence = [];
+              let currentRootNote = lastChoice;
               for (let i = 0; i < sequenceLength; i++) {
-                const choice = makeChordChoice(config);
-                sequence.push(choice);
+                const weights = produceChordWeights(config);
+                const choice = makeWeightedChoice(weights);
+                const chordNotes = chooseAndRootChord(choice, config);
+                const chord = choice[1];
+                const finalNotes = applyInversion(chordNotes, chord, config, currentRootNote);
+                currentRootNote = Math.min(...finalNotes);
+                sequence.push(finalNotes);
               }
               console.log("playing sequence: ", sequence);
 
@@ -152,7 +158,7 @@
               const totalBeats = sequenceLength * noteDurationBeats + restBeats;
 
               // Schedule next sequence
-              setTimeout(mkCont(lastChoice), totalBeats * beatMs);
+              setTimeout(mkCont(currentRootNote), totalBeats * beatMs);
             }
           };
         }

@@ -239,3 +239,17 @@ function setupTonicNameUpdate() {
     document.getElementById("tonicName").textContent = noteName(this.value);
   });
 }
+
+function weightedRandomIndex(weightsArray) {
+  // Select an index from a simple array of weights using weighted random.
+  const choices = [];
+  let total = 0;
+  for (let i = 0; i < weightsArray.length; i++) {
+    if (weightsArray[i] > 0) {
+      total += weightsArray[i];
+      choices.push({ choice: i, weightEnd: total });
+    }
+  }
+  if (choices.length === 0) return 0;
+  return makeWeightedChoice(choices);
+}

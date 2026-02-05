@@ -1,3 +1,31 @@
+const intervalLabels = [
+  "p1",
+  "m2",
+  "M2",
+  "m3",
+  "M3",
+  "P4",
+  "A4",
+  "P5",
+  "m6",
+  "M6",
+  "m7",
+  "M7",
+  "P8",
+  "O+m2",
+  "O+M2",
+  "O+m3",
+  "O+M3",
+  "O+P4",
+  "O+A4",
+  "O+P5",
+  "O+m6",
+  "O+M6",
+  "O+m7",
+  "O+M7",
+  "O+P8",
+];
+
 const inputSchema = {
   title: "Chord Match Configuration",
   sections: [
@@ -66,6 +94,18 @@ const inputSchema = {
                 default: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 cssClass: "weights-grid",
               },
+              {
+                type: "checkbox",
+                id: "overrideInversionWeight",
+                label: "Override Inversion Weights:",
+                default: false,
+              },
+              {
+                type: "json",
+                id: "inversionWeights",
+                label: "Inversion Weights:",
+                default: [10],
+              },
             ],
           },
           addButtonLabel: "+ Add Chord",
@@ -86,6 +126,47 @@ const inputSchema = {
               weights: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10],
             },
           ],
+        },
+        {
+          type: "label",
+          text: "Global Inversion Weights (index 0 = root position, index 1 = 1st inversion, etc.):",
+        },
+        {
+          type: "dynamicList",
+          id: "globalInversionWeights",
+          itemType: {
+            type: "number",
+            min: 0,
+          },
+          labelFunction: "getInversionLabel",
+          default: [10],
+          minLength: 1,
+          removeType: "onlyLast",
+          cssClass: "interval-grid",
+        },
+      ],
+    },
+    {
+      title: "Interval Weights",
+      cssClass: "config-section",
+      controls: [
+        {
+          type: "preset-selector",
+          targetField: "intervalWeights",
+          presetSource: "intervalPresets",
+        },
+        {
+          type: "dynamicList",
+          id: "intervalWeights",
+          itemType: {
+            type: "number",
+            min: 0,
+          },
+          labelFunction: "getIntervalLabel",
+          default: [10, 20, 20, 20, 10, 10, 7, 7, 5, 4, 3, 2, 1, 1],
+          minLength: 1,
+          removeType: "onlyLast",
+          cssClass: "interval-grid",
         },
       ],
     },
@@ -274,10 +355,35 @@ const inputSchema = {
         },
       ],
     },
+    intervalPresets: {
+      "no change": [],
+      default: [10, 20, 20, 20, 10, 10, 7, 7, 5, 4, 3, 2, 1, 1],
+      stepwise: [400, 1000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "small jumps": [300, 500, 500, 400, 400, 100, 100, 1, 1, 0, 0, 0, 0],
+      "more jumps": [
+        300, 500, 500, 400, 400, 300, 300, 200, 200, 100, 100, 100, 0, 0,
+      ],
+      "even more jumps": [
+        100, 300, 300, 300, 300, 300, 300, 200, 200, 200, 200, 200, 100, 100,
+      ],
+    },
   },
 };
 
 let formAPI;
+
+function getIntervalLabel(index) {
+  return intervalLabels[index]
+    ? `${intervalLabels[index]} (${index} st)`
+    : `(${index} st)`;
+}
+
+function getInversionLabel(index) {
+  if (index === 0) return "root position";
+  if (index === 1) return "1st inversion";
+  if (index === 2) return "2nd inversion";
+  return `inversion ${index}`;
+}
 
 function randomTonic() {
   const config = formAPI.getCurrentConfig();
@@ -290,6 +396,8 @@ function initializeConfigEditor() {
     functions: {
       noteName: noteName,
       randomTonic: randomTonic,
+      getIntervalLabel: getIntervalLabel,
+      getInversionLabel: getInversionLabel,
     },
     autoSaveKey: "chord-match",
     initialLoadFromAutoSave: true,
@@ -376,6 +484,74 @@ function chooseAndRootChord(choice, config) {
   }
   const finalRoot = rootOptions[getRandomInt(rootOptions.length)];
   return chord.offsets.map((offset) => finalRoot + offset);
+}
+
+function applyInversion(chordNotes, chord, config, previousChordRoot) {
+  const invWeights =
+    chord.overrideInversionWeight &&
+    chord.inversionWeights &&
+    chord.inversionWeights.length > 0
+      ? chord.inversionWeights
+      : config.globalInversionWeights || [10];
+
+  if (invWeights.length <= 1) {
+    return chordNotes;
+  }
+
+  const inversionIndex = weightedRandomIndex(invWeights);
+
+  if (inversionIndex === 0) {
+    return chordNotes;
+  }
+
+  // Apply inversions: each inversion raises the lowest note by an octave
+  let notes = [...chordNotes];
+  for (let i = 0; i < inversionIndex; i++) {
+    const minNote = Math.min(...notes);
+    const minIdx = notes.indexOf(minNote);
+    notes[minIdx] = minNote + 12;
+  }
+
+  // Find new lowest note (the inverted bass)
+  const newLowest = Math.min(...notes);
+  const intervals = notes.map((n) => n - newLowest);
+
+  // Use interval weights to choose octave for the inverted chord
+  const intervalWeights =
+    config.intervalWeights || [10, 20, 20, 20, 10, 10, 7, 7, 5, 4, 3, 2, 1, 1];
+
+  // Find valid octave candidates for the inverted bass
+  const candidates = [];
+  for (let base = newLowest - 60; base <= newLowest + 60; base += 12) {
+    const candidateNotes = intervals.map((offset) => base + offset);
+    const minNote = Math.min(...candidateNotes);
+    const maxNote = Math.max(...candidateNotes);
+    if (minNote >= config.lowPitch && maxNote <= config.highPitch) {
+      let weight = 1;
+      if (previousChordRoot !== null && previousChordRoot !== undefined) {
+        const distance = Math.abs(base - previousChordRoot);
+        weight =
+          distance < intervalWeights.length ? intervalWeights[distance] : 0;
+      }
+      if (weight > 0) {
+        candidates.push({ notes: candidateNotes, weight });
+      }
+    }
+  }
+
+  if (candidates.length === 0) {
+    // Fallback: use inverted chord as computed
+    return notes;
+  }
+
+  // Weighted random selection among valid candidates
+  const weightsArray = [];
+  let totalWeight = 0;
+  for (const c of candidates) {
+    totalWeight += c.weight;
+    weightsArray.push({ choice: c.notes, weightEnd: totalWeight });
+  }
+  return makeWeightedChoice(weightsArray);
 }
 
 function applyChordPreset() {
