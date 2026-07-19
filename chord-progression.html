@@ -17,6 +17,7 @@
       type="text/javascript"
       src="bootstrap-prefers-color-scheme.js"
     ></script>
+    <script type="text/javascript" src="ear-training-sounds.js"></script>
     <script type="text/javascript" src="input-forms.js"></script>
     <script type="text/javascript" src="chord-progression-config.js"></script>
     <script type="text/javascript" src="ear-training-helpers.js"></script>
@@ -40,20 +41,9 @@
         const volumeDb = computeVolumeDb(config.volume);
         volumeNode.volume.value = volumeDb;
 
-        const synthOptions = {
-          envelope: {
-            attack: 0.05,
-            decay: 0.2,
-            sustain: 0.8,
-            release: 0.05,
-          },
-        };
-        if (instrument !== "default") {
-          synthOptions.oscillator = { type: instrument };
-        }
-        const synth = new Tone.PolySynth(Tone.Synth, synthOptions).connect(
-          volumeNode,
-        );
+        // Chords here run from triads to four note sevenths and added octaves.
+        const typicalChordSize = 4;
+        const synth = makePolySynth(instrument, volumeNode, typicalChordSize);
 
         playingGlobal = true;
         startPlaying(synth);

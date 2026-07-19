@@ -17,6 +17,7 @@
       type="text/javascript"
       src="bootstrap-prefers-color-scheme.js"
     ></script>
+    <script type="text/javascript" src="ear-training-sounds.js"></script>
     <script type="text/javascript" src="input-forms.js"></script>
     <script type="text/javascript" src="chord-match-config.js"></script>
     <script type="text/javascript" src="ear-training-helpers.js"></script>
@@ -42,22 +43,9 @@
         const volumeDb = computeVolumeDb(config.volume);
         volumeNode.volume.value = volumeDb;
 
-        const synthOptions = {
-          envelope: {
-            attack: 0.05,
-            decay: 0.2,
-            sustain: 0.8,
-            // Want fast release, the note bleeds too far into the space at higher speeds.
-            release: 0.05,
-          },
-        };
-        // Only add oscillator type if not using default
-        if (instrument !== "default") {
-          synthOptions.oscillator = { type: instrument };
-        }
-        const synth = new Tone.PolySynth(Tone.Synth, synthOptions).connect(
-          volumeNode,
-        );
+        // Chords here run from triads to four note sevenths and added octaves.
+        const typicalChordSize = 4;
+        const synth = makePolySynth(instrument, volumeNode, typicalChordSize);
         Tone.Transport.bpm.value = config.tempo;
         playingGlobal = true;
         startPlaying(synth, getPlaying, undefined);
@@ -270,8 +258,13 @@
           </p>
           <p>
             You can select different instruments (sine, square, sawtooth,
-            triangle) to change the timbre of the playback. This can help train
-            your ear to recognize chords with different tonal qualities.
+            triangle, epiano, e-organ) to change the timbre of the playback.
+            This can help train your ear to recognize chords with different
+            tonal qualities. The epiano is an FM electric piano and is what
+            "default" selects; it tends to be the easiest to pick individual
+            notes out of when chords are dense. The e-organ sustains rather than
+            decaying, which makes it useful for holding a chord while you find
+            notes in it.
           </p>
           <p>
             Each of these tools has a configuration import/export feature to

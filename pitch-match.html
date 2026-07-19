@@ -17,6 +17,7 @@
       type="text/javascript"
       src="bootstrap-prefers-color-scheme.js"
     ></script>
+    <script type="text/javascript" src="ear-training-sounds.js"></script>
     <script type="text/javascript" src="input-forms.js"></script>
     <script type="text/javascript" src="pitch-match-config.js"></script>
     <script type="text/javascript" src="ear-training-helpers.js"></script>
@@ -50,21 +51,7 @@
             i < instruments.length
               ? instruments[i]
               : instruments[instruments.length - 1];
-          const synthOptions = {
-            envelope: {
-              attack: 0.05,
-              decay: 0.2,
-              sustain: 0.8,
-              // Want fast release, the note bleeds too far into the space at higher speeds.
-              release: 0.05,
-            },
-          };
-          // Only add oscillator type if not using default
-          if (instrumentType !== "default") {
-            synthOptions.oscillator = { type: instrumentType };
-          }
-          const synth = new Tone.Synth(synthOptions).connect(volumeNode);
-          synths.push(synth);
+          synths.push(makeSynth(instrumentType, volumeNode, numVoices));
         }
 
         Tone.Transport.bpm.value = config.tempo;
@@ -217,9 +204,10 @@
             You can configure multiple voices to play simultaneous notes. Set
             the "Number of Voices" to specify how many notes play at once. Each
             voice independently chooses notes based on the weights. You can also
-            assign different instruments (sine, square, sawtooth, triangle) to
-            each voice. If you have more voices than instruments configured, the
-            last instrument in the list will be used for all remaining voices.
+            assign different instruments (sine, square, sawtooth, triangle,
+            epiano, e-organ) to each voice. "default" is the epiano. If you have
+            more voices than instruments configured, the last instrument in the
+            list will be used for all remaining voices.
           </p>
           <p>
             Another exercise that can help improve melodic fluency is using the

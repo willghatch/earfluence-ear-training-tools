@@ -191,13 +191,7 @@ const inputSchema = {
           label: "Instrument per Voice:",
           itemType: {
             type: "radio",
-            options: [
-              { value: "default" },
-              { value: "sine" },
-              { value: "square" },
-              { value: "sawtooth" },
-              { value: "triangle" },
-            ],
+            options: instrumentOptions(),
             default: "default",
           },
           default: ["default"],

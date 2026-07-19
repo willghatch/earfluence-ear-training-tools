@@ -17,6 +17,7 @@
       type="text/javascript"
       src="bootstrap-prefers-color-scheme.js"
     ></script>
+    <script type="text/javascript" src="ear-training-sounds.js"></script>
     <script type="text/javascript" src="input-forms.js"></script>
     <script type="text/javascript" src="sight-sing-config.js"></script>
     <script type="text/javascript" src="ear-training-helpers.js"></script>
@@ -149,21 +150,7 @@
               i < instruments.length
                 ? instruments[i]
                 : instruments[instruments.length - 1];
-            const synthOptions = {
-              envelope: {
-                attack: 0.05,
-                decay: 0.2,
-                sustain: 0.8,
-                // Want fast release, the note bleeds too far into the space at higher speeds.
-                release: 0.05,
-              },
-            };
-            // Only add oscillator type if not using default
-            if (instrumentType !== "default") {
-              synthOptions.oscillator = { type: instrumentType };
-            }
-            const synth = new Tone.Synth(synthOptions).connect(volumeNode);
-            synths.push(synth);
+            synths.push(makeSynth(instrumentType, volumeNode, numVoices));
           }
 
           Tone.Transport.bpm.value = config.tempo;
@@ -666,11 +653,12 @@
             notes appear at each beat. Each voice independently chooses notes
             based on the weights, and notes for different voices are displayed
             vertically stacked at the same horizontal position. You can assign
-            different instruments (sine, square, sawtooth, triangle) to each
-            voice, and different colors for visual distinction. If you have more
-            voices than instruments or colors configured, the last item in each
-            list will be used for all remaining voices. Use "default" as a color
-            to use the standard color based on your light/dark theme preference.
+            different instruments (sine, square, sawtooth, triangle, epiano,
+            e-organ; "default" is the epiano) to each voice, and different
+            colors for visual distinction. If you have more voices than
+            instruments or colors configured, the last item in each list will be
+            used for all remaining voices. Use "default" as a color to use the
+            standard color based on your light/dark theme preference.
           </p>
           <p>
             Each of these tools has a configuration import/export feature to

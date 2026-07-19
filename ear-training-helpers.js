@@ -143,7 +143,9 @@ function playCadence(config, chords) {
   // chords is an array of arrays of midi numbers.
   const volumeDb = computeVolumeDb(config.volume);
   const volumeNode = new Tone.Volume(volumeDb).toDestination();
-  const synth = new Tone.PolySynth().connect(volumeNode);
+  // Cadences are four note voicings, and follow whichever instrument the tool
+  // is configured for so the reference does not change timbre mid-exercise.
+  const synth = makePolySynth(configInstrument(config), volumeNode, 4);
   Tone.Transport.bpm.value = config.tempo;
   const tonic = config.tonic;
 

@@ -1,7 +1,8 @@
-dist: *.html *.js *.css *.svg
+.PHONY: dist
+dist:
 	rm -rf dist
 	mkdir dist
-	cp *.{html,js,css,svg} dist/
+	cp *.html *.js *.css *.svg dist/
 
 .PHONY: clean
 clean:
