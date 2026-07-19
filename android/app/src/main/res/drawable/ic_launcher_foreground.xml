@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The eighth note from web/favicon.svg, fitted to the adaptive icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+	android:width="108dp"
+	android:height="108dp"
+	android:viewportWidth="108"
+	android:viewportHeight="108">
+
+	<!-- stem -->
+	<path
+		android:pathData="M56,25.9 L56,75.9"
+		android:strokeColor="#9c49b7"
+		android:strokeWidth="2.5" />
+
+	<!-- flag -->
+	<path
+		android:pathData="M56,25.9 Q66,35.9 56,45.9"
+		android:strokeColor="#9c49b7"
+		android:strokeWidth="2.5" />
+
+	<!-- note head -->
+	<path
+		android:pathData="M46,75.9 a5,7.5 0 1,0 10,0 a5,7.5 0 1,0 -10,0"
+		android:fillColor="#9c49b7" />
+</vector>

@@ -1,0 +1,38 @@
+plugins {
+	id "com.android.application"
+}
+
+android {
+	namespace "uno.hatch.earfluence"
+	compileSdk 36
+	// Pinned rather than left to the AGP default, which is an older version
+	// that the build would then try to download into a read-only SDK.
+	buildToolsVersion "36.0.0"
+
+	defaultConfig {
+		applicationId "uno.hatch.earfluence"
+		minSdk 26
+		targetSdk 36
+		versionCode 1
+		versionName "0.1"
+	}
+
+	compileOptions {
+		sourceCompatibility JavaVersion.VERSION_17
+		targetCompatibility JavaVersion.VERSION_17
+	}
+
+	buildTypes {
+		release {
+			minifyEnabled false
+		}
+	}
+}
+
+dependencies {
+	// WebViewAssetLoader, so the pages are served from an https origin.
+	implementation "androidx.webkit:webkit:1.16.0"
+	// ComponentActivity + OnBackPressedDispatcher, which the predictive back
+	// gesture requires in place of overriding onBackPressed().
+	implementation "androidx.activity:activity:1.13.0"
+}

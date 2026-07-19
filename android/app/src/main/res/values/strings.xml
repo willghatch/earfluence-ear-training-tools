@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">earfluence</string>
+	<string name="pitch_match">Pitch Match</string>
+	<string name="chord_match">Chord Match</string>
+	<string name="sight_sing">Sight Sing</string>
+	<string name="chord_progression">Chord Progression</string>
+	<string name="stop_all">Stop All</string>
+</resources>

@@ -331,6 +331,22 @@ function stopAllPlayback() {
   });
 }
 
+// A host embedding a tool (the Android app) needs to stop it without knowing
+// anything about its internals, so each tool registers its own stop function.
+// Stopping an already-stopped tool is a no-op, so stopTool is safe to call
+// unconditionally.
+let registeredToolStop = null;
+
+function registerToolStop(stopFn) {
+  registeredToolStop = stopFn;
+}
+
+function stopTool() {
+  if (registeredToolStop) {
+    registeredToolStop();
+  }
+}
+
 // Play buttons show the action they will perform, colored for the current
 // state, so the tool's play/stop state is visible at a glance.
 function setPlayButtonState(playing) {

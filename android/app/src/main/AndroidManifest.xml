@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<application
+		android:allowBackup="true"
+		android:icon="@mipmap/ic_launcher"
+		android:label="@string/app_name"
+		android:supportsRtl="true"
+		android:theme="@style/AppTheme">
+
+		<!--
+			One launcher entry.  All four tools live inside this activity, each
+			in its own WebView, so that several can play at the same time.
+
+			configChanges keeps the activity (and so every live WebView) alive
+			across rotation and dark/light switches; recreating it would
+			silence whatever is playing.
+		-->
+		<activity
+			android:name=".MainActivity"
+			android:exported="true"
+			android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+		</activity>
+	</application>
+
+</manifest>

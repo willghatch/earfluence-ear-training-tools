@@ -1,1 +1,13 @@
 dist/
+web/vendor/
+
+# Staged into the Android build by the Makefile; never a source of truth.
+android/app/src/main/assets/
+
+# Fetched and verified by `make`, like everything else in vendor/.
+android/gradle/wrapper/gradle-wrapper.jar
+
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties

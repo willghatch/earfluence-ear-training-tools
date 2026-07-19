@@ -1,0 +1,3 @@
+[submodule "third_party/tone.js"]
+	path = third_party/tone.js
+	url = https://github.com/Tonejs/Tone.js.git

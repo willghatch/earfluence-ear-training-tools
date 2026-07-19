@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	Light variant.  The -night variant of this file supplies the dark one,
+	which is what puts the activity into the night ui mode that the WebView
+	reports to the pages as prefers-color-scheme: dark.
+-->
+<resources>
+	<style name="AppTheme" parent="@android:style/Theme.DeviceDefault.Light" />
+</resources>

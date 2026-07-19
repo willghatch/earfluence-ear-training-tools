@@ -1,0 +1,10 @@
+# Gradle wrapper jar, fetched into android/gradle/wrapper/ at build time.
+#
+# Same format as web/deps.txt:  FILENAME  URL  SHA384
+#
+# Checking a binary into the tree is the usual Android convention, but this
+# repo already fetches and verifies its other dependencies, so the wrapper
+# goes through the same path.  The version here must match the
+# distributionUrl in gradle/wrapper/gradle-wrapper.properties.
+
+gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar sha384-h5efuSuClRtv/nZDuCVWxBA5A99RAALTTJbCP2H70ETgVwcqCC8vCJCjHai6dxp+
