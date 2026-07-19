@@ -47,11 +47,15 @@
         const typicalChordSize = 4;
         const synth = makePolySynth(instrument, volumeNode, typicalChordSize);
         Tone.Transport.bpm.value = config.tempo;
+        registerPlaybackSynths([synth]);
         playingGlobal = true;
+        setPlayButtonState(true);
         startPlaying(synth, getPlaying, undefined);
       }
       function stop() {
         playingGlobal = false;
+        stopAllPlayback();
+        setPlayButtonState(false);
       }
       function togglePlay() {
         if (playingGlobal) {
@@ -131,7 +135,7 @@
                   }
 
                   notesToPlay.forEach((note, index) => {
-                    setTimeout(
+                    playbackTimeout(
                       () => {
                         // Update volume from current config before playing
                         const currentConfig = getCurrentConfig();
@@ -150,7 +154,7 @@
                   });
                 } else {
                   // Play all notes together
-                  setTimeout(() => {
+                  playbackTimeout(() => {
                     // Update volume from current config before playing
                     const currentConfig = getCurrentConfig();
                     const volumeDb = computeVolumeDb(currentConfig.volume);
@@ -168,7 +172,7 @@
               const totalBeats = sequenceLength * noteDurationBeats + restBeats;
 
               // Schedule next sequence
-              setTimeout(mkCont(currentRootNote), totalBeats * beatMs);
+              playbackTimeout(mkCont(currentRootNote), totalBeats * beatMs);
             }
           };
         }
@@ -303,6 +307,11 @@
             minor+harmonic and major+mixolydian. Added legato/staccato option to
             control note duration within each beat.
           </p>
+          <p>
+            <strong>2026-07-19:</strong> The play button now shows whether it
+            will start or stop playback, and stopping silences everything
+            immediately instead of finishing the current sequence.
+          </p>
         </div>
       </div>
     </div>
@@ -316,7 +325,9 @@
           initializeConfigEditor();
         });
       </script>
-      <button onclick="togglePlay()">Play/Pause</button>
+      <button class="btn btn-success play-toggle-button" onclick="togglePlay()">
+        Play
+      </button>
       <button onclick="playMajorCadence(getCurrentConfig())">
         Play Major Cadence
       </button>

@@ -79,7 +79,7 @@
               const delayBeforePlay = Math.max(0, sequenceLength + extraRests);
 
               sequence.forEach((notes, index) => {
-                setTimeout(
+                playbackTimeout(
                   () => {
                     // Update volume from current config before playing
                     const currentConfig = getCurrentConfig();
@@ -104,7 +104,7 @@
 
               // Schedule next sequence after showing + playing
               const totalBeats = delayBeforePlay + sequenceLength;
-              setTimeout(mkCont(currentChoice), totalBeats * beatMs);
+              playbackTimeout(mkCont(currentChoice), totalBeats * beatMs);
             }
           };
         }
@@ -154,9 +154,11 @@
           }
 
           Tone.Transport.bpm.value = config.tempo;
+          registerPlaybackSynths(synths);
           setLastChoice(null);
           playingGlobal = true;
           setPlayingLocal(true);
+          setPlayButtonState(true);
 
           // Request screen wake lock
           if (navigator.wakeLock) {
@@ -174,8 +176,10 @@
         }
         function stop() {
           playingGlobal = false;
+          stopAllPlayback();
           setPlayingLocal(false);
           setLastChoice(null);
+          setPlayButtonState(false);
 
           // Release screen wake lock
           if (wakeLock) {
@@ -703,6 +707,11 @@
             and major+mixolydian. Added legato/staccato option to control note
             duration within each beat.
           </p>
+          <p>
+            <strong>2026-07-19:</strong> The play button now shows whether it
+            will start or stop playback, and stopping silences everything
+            immediately instead of finishing the current sequence.
+          </p>
         </div>
       </div>
     </div>
@@ -716,7 +725,13 @@
           initializeConfigEditor();
         });
       </script>
-      <button id="playButton" onclick="globalTogglePlay()">Play/Pause</button>
+      <button
+        id="playButton"
+        class="btn btn-success play-toggle-button"
+        onclick="globalTogglePlay()"
+      >
+        Play
+      </button>
       <button onclick="playMajorCadence(getCurrentConfig())">
         Play Major Cadence
       </button>

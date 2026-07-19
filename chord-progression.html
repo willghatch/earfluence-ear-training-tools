@@ -45,12 +45,16 @@
         const typicalChordSize = 4;
         const synth = makePolySynth(instrument, volumeNode, typicalChordSize);
 
+        registerPlaybackSynths([synth]);
         playingGlobal = true;
+        setPlayButtonState(true);
         startPlaying(synth);
       }
 
       function stop() {
         playingGlobal = false;
+        stopAllPlayback();
+        setPlayButtonState(false);
       }
 
       function togglePlay() {
@@ -119,7 +123,7 @@
               }
             }
             notesToPlay.forEach((note, index) => {
-              setTimeout(() => {
+              playbackTimeout(() => {
                 synth.triggerAttackRelease(midiTone(note), noteDuration);
               }, index * arpeggiationDelay);
             });
@@ -131,7 +135,7 @@
 
           // Schedule next chord after beatsPerChord + extraRests beats
           const totalMs = (beatsPerChord + extraRests) * beatMs;
-          setTimeout(playNext, totalMs);
+          playbackTimeout(playNext, totalMs);
         }
 
         playNext();
@@ -270,6 +274,11 @@
           </p>
           <h3>Changelog</h3>
           <p><strong>2026-02-04:</strong> Initial release</p>
+          <p>
+            <strong>2026-07-19:</strong> The play button now shows whether it
+            will start or stop playback, and stopping silences everything
+            immediately instead of finishing the current sequence.
+          </p>
         </div>
       </div>
     </div>
@@ -283,7 +292,9 @@
           initializeConfigEditor();
         });
       </script>
-      <button onclick="togglePlay()">Play/Pause</button>
+      <button class="btn btn-success play-toggle-button" onclick="togglePlay()">
+        Play
+      </button>
       <button onclick="playMajorCadence(getCurrentConfig())">
         Play Major Cadence
       </button>

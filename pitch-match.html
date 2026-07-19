@@ -55,11 +55,15 @@
         }
 
         Tone.Transport.bpm.value = config.tempo;
+        registerPlaybackSynths(synths);
         playingGlobal = true;
+        setPlayButtonState(true);
         startPlaying(synths, getPlaying, undefined);
       }
       function stop() {
         playingGlobal = false;
+        stopAllPlayback();
+        setPlayButtonState(false);
       }
       function togglePlay() {
         if (playingGlobal) {
@@ -100,7 +104,7 @@
 
               // Play each set of simultaneous notes (all voices at each beat) in the sequence
               sequence.forEach((notes, index) => {
-                setTimeout(() => {
+                playbackTimeout(() => {
                   // Update volume from current config before playing
                   const currentConfig = getCurrentConfig();
                   const volumeDb = computeVolumeDb(currentConfig.volume);
@@ -124,7 +128,7 @@
               const totalBeats = sequenceLength + restBeats;
 
               // Schedule next sequence
-              setTimeout(mkCont(currentChoice), totalBeats * beatMs);
+              playbackTimeout(mkCont(currentChoice), totalBeats * beatMs);
             }
           };
         }
@@ -252,6 +256,11 @@
             and major+mixolydian. Added legato/staccato option to control note
             duration within each beat.
           </p>
+          <p>
+            <strong>2026-07-19:</strong> The play button now shows whether it
+            will start or stop playback, and stopping silences everything
+            immediately instead of finishing the current sequence.
+          </p>
         </div>
       </div>
     </div>
@@ -265,7 +274,9 @@
           initializeConfigEditor();
         });
       </script>
-      <button onclick="togglePlay()">Play/Pause</button>
+      <button class="btn btn-success play-toggle-button" onclick="togglePlay()">
+        Play
+      </button>
       <button onclick="playMajorCadence(getCurrentConfig())">
         Play Major Cadence
       </button>

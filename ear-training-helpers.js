@@ -146,6 +146,7 @@ function playCadence(config, chords) {
   // Cadences are four note voicings, and follow whichever instrument the tool
   // is configured for so the reference does not change timbre mid-exercise.
   const synth = makePolySynth(configInstrument(config), volumeNode, 4);
+  registerPlaybackSynths([synth], true);
   Tone.Transport.bpm.value = config.tempo;
   const tonic = config.tonic;
 
@@ -275,5 +276,67 @@ function applyLooseVoicing(chordNotes, config) {
     }
     if (candidates.length === 0) return note;
     return candidates[getRandomInt(candidates.length)];
+  });
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//// Playback control shared by all tools.
+////////////////////////////////////////////////////////////////////////////////
+
+// Tools schedule notes and their next iteration with setTimeout, so stopping
+// requires both cancelling everything pending and silencing what is already
+// sounding.  All playback timeouts go through playbackTimeout so that
+// stopAllPlayback can cancel them.
+
+const pendingPlaybackTimeouts = new Set();
+let activePlaybackSynths = [];
+
+function playbackTimeout(callback, delayMs) {
+  const id = setTimeout(() => {
+    pendingPlaybackTimeouts.delete(id);
+    callback();
+  }, delayMs);
+  pendingPlaybackTimeouts.add(id);
+  return id;
+}
+
+// Synths are created fresh for each play, so they are disposed on stop.
+// Set disposeImmediately for synths that have notes scheduled ahead on Tone's
+// own clock (cadences), since those cannot be cancelled by clearing timeouts.
+function registerPlaybackSynths(synths, disposeImmediately) {
+  synths.forEach((synth) =>
+    activePlaybackSynths.push({ synth, disposeImmediately }),
+  );
+}
+
+function stopAllPlayback() {
+  pendingPlaybackTimeouts.forEach((id) => clearTimeout(id));
+  pendingPlaybackTimeouts.clear();
+
+  const registrations = activePlaybackSynths;
+  activePlaybackSynths = [];
+  registrations.forEach(({ synth, disposeImmediately }) => {
+    if (synth.releaseAll) {
+      synth.releaseAll();
+    } else {
+      synth.triggerRelease();
+    }
+    if (disposeImmediately) {
+      synth.dispose();
+    } else {
+      // Dispose only after the release envelope and any effect tails finish,
+      // otherwise the sound is cut off with a click.
+      setTimeout(() => synth.dispose(), 3000);
+    }
+  });
+}
+
+// Play buttons show the action they will perform, colored for the current
+// state, so the tool's play/stop state is visible at a glance.
+function setPlayButtonState(playing) {
+  document.querySelectorAll(".play-toggle-button").forEach((button) => {
+    button.textContent = playing ? "Stop" : "Play";
+    button.classList.toggle("btn-danger", playing);
+    button.classList.toggle("btn-success", !playing);
   });
 }
